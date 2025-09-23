@@ -1,34 +1,28 @@
 {
   "name": "roxy",
-  "version": "0.1.0",
-  "description": "Rarely Obeys, eXtremely Yappy (In short: ROXY) is probably the most basic implementation for a Discord App (BOT), based on Discord.js;",
-  "homepage": "https://github.com/roaxcean/roxy#readme",
-  "bugs": {
-    "url": "https://github.com/roaxcean/roxy/issues"
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "prestart": "tsc",
+    "start": "node ./src/index.js",
+    "lint": "npx eslint ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/roaxcean/roxy.git"
+    "url": "https://github.com/roaxcean/roxy.git"
   },
-  "license": "",
-  "author": "roaxcean",
-  "type": "commonjs",
-  "main": "src/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "private": false,
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "eslint": "^9.36.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.1"
   },
   "dependencies": {
-    "@types/node": "^24.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.39.1",
-    "@typescript-eslint/parser": "^8.39.1",
-    "discord.js": "^14.21.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
-    "prettier": "^3.6.2",
-    "typescript": "^5.9.2"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.33.0",
-    "eslint": "^9.33.0"
+    "consola": "^3.4.2",
+    "discord.js": "^14.22.1",
+    "dotenv": "^17.2.2"
   }
 }
