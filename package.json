@@ -12,6 +12,7 @@
     "type": "git",
     "url": "https://github.com/roaxcean/roxy.git"
   },
+  "type": "module",
   "private": false,
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -21,8 +22,8 @@
     "typescript-eslint": "^8.44.1"
   },
   "dependencies": {
+    "@projectdysnomia/dysnomia": "github:projectdysnomia/dysnomia#dev",
     "consola": "^3.4.2",
-    "discord.js": "^14.22.1",
     "dotenv": "^17.2.2"
   }
 }
