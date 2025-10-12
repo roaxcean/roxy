@@ -11,7 +11,7 @@ import { MessageHandler } from "../sys/messageHandler.js";
  * @type { Command }
  */
 export default {
-    name: "compv2",
+    name: "testv2",
     description: "a cute lil demo of components v2",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,

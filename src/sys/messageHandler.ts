@@ -96,7 +96,6 @@ export class MessageHandler {
             components: this.container({
                 title: "❌ Oops!",
                 description: "Something went wrong while executing your command.",
-                color: 0xff4d4d,
                 fields,
             }),
             flags: Constants.MessageFlags.EPHEMERAL | Constants.MessageFlags.IS_COMPONENTS_V2,
@@ -112,7 +111,6 @@ export class MessageHandler {
             components: this.container({
                 title: `ℹ️ ${title}`,
                 description,
-                color: 0x3498db,
             }),
             flags: Constants.MessageFlags.EPHEMERAL | Constants.MessageFlags.IS_COMPONENTS_V2,
         });
@@ -123,7 +121,6 @@ export class MessageHandler {
             components: this.container({
                 title: "✅ All good!",
                 description,
-                color: 0x2ecc71,
             }),
             flags: Constants.MessageFlags.EPHEMERAL | Constants.MessageFlags.IS_COMPONENTS_V2,
         });
@@ -134,7 +131,6 @@ export class MessageHandler {
             components: this.container({
                 title: "⚠️ Heads up!",
                 description,
-                color: 0xffcc00,
             }),
             flags: Constants.MessageFlags.EPHEMERAL | Constants.MessageFlags.IS_COMPONENTS_V2,
         });

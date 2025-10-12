@@ -80,6 +80,12 @@ async function registerCommands() {
             true
         );
         const cmds: Command[] = await loadCommands();
+        const commandsToRegister = cmds.map(cmd => ({
+            ...cmd,
+            integration_types: [0, 1], // 0 = guild install, 1 = user install (personal)
+            contexts: [0, 1, 2], // 0 = guild, 1 = bot DM, 2 = private channel
+        }));
+
 
         const commandsToUpsert = cmds.filter(localCmd => {
             const existing = existingCommands.find(
@@ -95,7 +101,7 @@ async function registerCommands() {
         if (commandsToUpsert.length > 0) {
             consola.info("Adding/updating commands:", commandsToUpsert.map(cmd => cmd.name));
             // @ts-ignore
-            await app.requestHandler.request("PUT", `/applications/${appId}/commands`, true, cmds);
+            await app.requestHandler.request("PUT", `/applications/${appId}/commands`, true, commandsToRegister);
         } else {
             consola.info("No new commands to add or update.");
         }

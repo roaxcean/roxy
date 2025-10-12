@@ -8,7 +8,7 @@ import { consola } from "consola";
 const maxTrace = process.env.NODE_ENV === "development" ? Infinity : 8;
 
 async function handleError(err: any) {
-    if (err && err.message && err.message.startsWith("Unhandled MESSAGE_CREATE type")) return false;
+    if (err && err.message && ( err.message.startsWith("Unhandled MESSAGE_CREATE type"))) return false;
 
     if (err) {
         if (typeof err === "string") {
@@ -22,6 +22,9 @@ async function handleError(err: any) {
                 "| 3. Click 'Bot' in the sidebar\n" +
                 "+ 4. Turn on 'Server Members Intent'"
             );
+        } else if (err.message.startsWith("Invalid Form Body")) {
+            consola.warn(err.message);
+            return false;
         } else {
             let stackLines = (err.stack || "").split("\n");
             if (stackLines.length > (maxTrace + 2)) {
