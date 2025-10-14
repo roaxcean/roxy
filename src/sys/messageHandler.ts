@@ -136,10 +136,6 @@ export class MessageHandler {
         });
     }
 
-    /**
-     * Sends a fully raw V2 payload, only pre-defines IS_COMPONENTS_V2 flag.
-     * Everything else (components, attachments, etc.) is passed as-is.
-     */
     static async raw(
         interaction: AnyInteractionGateway,
         payload: Partial<InteractionContent> | Partial<InteractionContentEdit>
@@ -148,5 +144,12 @@ export class MessageHandler {
             ...payload,
             flags: Constants.MessageFlags.IS_COMPONENTS_V2,
         });
+    }
+
+    static async rawer(
+        interaction: AnyInteractionGateway,
+        payload: Partial<InteractionContent> | Partial<InteractionContentEdit>
+    ) {
+        return this.send(interaction, payload);
     }
 }

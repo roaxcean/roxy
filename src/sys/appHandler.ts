@@ -4,9 +4,15 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
-import { Client } from "@projectdysnomia/dysnomia";
+import { Client, Constants } from "@projectdysnomia/dysnomia";
 import { config } from "dotenv";
 config({ override: true, quiet: true });
+
+const INTENTS = [
+    Constants.Intents.messageContent
+];
+
+const intentsBitfield = INTENTS.reduce((acc, v) => acc | v, 0);
 
 const app = new Client(
     `Bot ${process.env.DISCORD_TOKEN}`,
@@ -14,11 +20,17 @@ const app = new Client(
         allowedMentions: {
             everyone: false,
             repliedUser: true,
-            roles: false,
-            users: false,
+            roles: true,
+            users: true,
         },
         defaultImageFormat: "png",
-        defaultImageSize: 256
+        defaultImageSize: 256,
+        gateway: {
+            intents: intentsBitfield,
+        },
+        rest: {
+            ratelimiterOffset: 0,
+        }
     }
 );
 const ignore = [

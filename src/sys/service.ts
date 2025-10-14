@@ -13,6 +13,7 @@ import { config } from "dotenv";
 config({ override: true, quiet: true });
 
 import app from "./appHandler.js";
+import log from "./loggingHandler.js"
 import { Command } from "./types.js";
 import { MessageHandler } from "./messageHandler.js";
 
@@ -126,6 +127,35 @@ async function start() {
         await registerCommands();
         setActivity();
         consola.success("The App is ready!");
+
+        await log({
+            components: [
+                {
+                    type: Constants.ComponentTypes.CONTAINER,
+                    components: [
+                        {
+                            type: Constants.ComponentTypes.TEXT_DISPLAY,
+                            content: `### <:settings:1426875133385244703> ${app.user.username}#${app.user.discriminator} process started!`
+                        },
+                        {
+                            type: Constants.ComponentTypes.TEXT_DISPLAY,
+                            content: `${
+                                process.env.APP_PINGROLE === "null" && process.env.APP_PINGUSER === "null"
+                                    ? "> No pings selected."
+                                    : `> ${
+                                        process.env.APP_PINGROLE === "null" ? "" : `<@&${process.env.APP_PINGROLE}> `
+                                    }${
+                                        process.env.APP_PINGUSER === "null" ? "" : `<@${process.env.APP_PINGUSER}> `
+                                    }`
+                            }`
+                        }
+                    ]
+                },
+                {
+                    type: Constants.ComponentTypes.SEPARATOR
+                }
+            ],
+        })
     });
 
     app.on("interactionCreate", async (interaction: AnyInteractionGateway) => {
