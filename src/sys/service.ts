@@ -8,6 +8,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { consola } from "consola";
+import { setTimeout as wait } from "node:timers/promises";
 import {AnyInteractionGateway, ComponentInteraction, Constants, SelfStatus} from "@projectdysnomia/dysnomia";
 import { config } from "dotenv";
 config({ override: true, quiet: true });
@@ -70,52 +71,89 @@ function setActivity() {
     setInterval(apply, 60 * 60 * 1000);
 }
 
+async function safeRequest(requestHandler: any, method: string, endpoint: string, auth: boolean, body?: any, retries = 3) {
+    let attempt = 0;
+    while (attempt < retries) {
+        try {
+            return await requestHandler.request(method, endpoint, auth, body);
+        } catch (err: any) {
+            attempt++;
+            const status = err?.status || err?.code;
+
+            if (status === 429) {
+                const retryAfter = err.response?.headers?.get("Retry-After") || 2;
+                consola.warn(`Rate-limited. Retrying after ${retryAfter}s...`);
+                await wait(Number(retryAfter) * 1000);
+            } else if (attempt < retries) {
+                const delay = 500 * attempt;
+                consola.warn(`Retrying ${method} ${endpoint} (attempt ${attempt}/${retries}) in ${delay}ms...`);
+                await wait(delay);
+            } else {
+                consola.error(`Request failed after ${retries} attempts:`, err);
+                throw err;
+            }
+        }
+    }
+}
+
 async function registerCommands() {
-    consola.info("Registering commands...");
+    consola.start("Registering Discord commands...");
 
     try {
-        const appId = app.user.id;
-        const existingCommands: unknown | any = await app.requestHandler.request(
-            "GET",
-            `/applications/${appId}/commands`,
-            true
-        );
-        const cmds: Command[] = await loadCommands();
-        const commandsToRegister = cmds.map(cmd => ({
+        const appId = app.user?.id;
+        if (!appId) throw new Error("App user is not initialized. Make sure the bot is connected.");
+
+        const existingCommands: any[] = await safeRequest(app.requestHandler, "GET", `/applications/${appId}/commands`, true);
+        const localCommands: Command[] = await loadCommands();
+        const formattedCommands = localCommands.map(cmd => ({
             ...cmd,
-            integration_types: [0, 1], // 0 = guild install, 1 = user install (personal)
-            contexts: [0, 1, 2], // 0 = guild, 1 = bot DM, 2 = private channel
+            integration_types: [0, 1],
+            contexts: [0, 1, 2],
         }));
 
-
-        const commandsToUpsert = cmds.filter(localCmd => {
-            const existing = existingCommands.find(
-                (gc: { name: string; type: number; }) => gc.name === localCmd.name && gc.type === localCmd.type
-            );
-            return !existing || JSON.stringify(localCmd) !== JSON.stringify(existing);
+        const toCreateOrUpdate = formattedCommands.filter(localCmd => {
+            const existing = existingCommands.find(c => c.name === localCmd.name && c.type === localCmd.type);
+            return !existing || JSON.stringify(existing) !== JSON.stringify(localCmd);
         });
 
-        const commandsToDelete = existingCommands.filter(
-            (gc: { name: string; type: number; }) => !cmds.some(localCmd => localCmd.name === gc.name && localCmd.type === gc.type)
-        );
+        const toDelete = existingCommands.filter(c => !formattedCommands.some(l => l.name === c.name && l.type === c.type));
 
-        if (commandsToUpsert.length > 0) {
-            consola.info("Adding/updating commands:", commandsToUpsert.map(cmd => cmd.name));
-            // @ts-ignore
-            await app.requestHandler.request("PUT", `/applications/${appId}/commands`, true, commandsToRegister);
-        } else {
-            consola.info("No new commands to add or update.");
+        for (const cmd of toCreateOrUpdate) {
+            try {
+                await safeRequest(app.requestHandler, "POST", `/applications/${appId}/commands`, true, cmd);
+                consola.success(`Upserted: ${cmd.name}`);
+            } catch (err) {
+                consola.error(`Failed to upsert command '${cmd.name}':`, err);
+            }
         }
 
-        for (const cmd of commandsToDelete) {
-            consola.warn(`Deleting old command: ${cmd.name}`);
-            await app.requestHandler.request("DELETE", `/applications/${appId}/commands/${cmd.id}`, true);
+        for (const cmd of toDelete) {
+            try {
+                await safeRequest(app.requestHandler, "DELETE", `/applications/${appId}/commands/${cmd.id}`, true);
+                consola.warn(`Deleted stale command: ${cmd.name}`);
+            } catch (err) {
+                consola.error(`Failed to delete '${cmd.name}':`, err);
+            }
         }
 
-        consola.success("Global slash and user context commands synced!");
+        const afterSync = await safeRequest(app.requestHandler, "GET", `/applications/${appId}/commands`, true);
+        const missing = formattedCommands.filter(cmd => !afterSync.find((ac: any) => ac.name === cmd.name));
+
+        if (missing.length > 0) {
+            consola.warn("Some commands didn’t register on the first pass, retrying...");
+            for (const cmd of missing) {
+                try {
+                    await safeRequest(app.requestHandler, "POST", `/applications/${appId}/commands`, true, cmd);
+                    consola.success(`Re-registered: ${cmd.name}`);
+                } catch (err) {
+                    consola.error(`Persistent failure registering '${cmd.name}':`, err);
+                }
+            }
+        }
+
+        consola.success("All global commands verified and synchronized successfully.");
     } catch (error) {
-        consola.error("Failed to register commands:", error);
-        // throw error;
+        consola.error("Fatal error during command registration:", error);
     }
 }
 

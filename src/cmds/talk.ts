@@ -21,7 +21,7 @@ export default {
             required: true,
         },
         {
-            name: "embed",
+            name: "plainText",
             description: "Wrap it in a pretty embed??????",
             type: Constants.ApplicationCommandOptionTypes.BOOLEAN,
             required: false,
@@ -30,7 +30,7 @@ export default {
 
     function: async (int: CommandInteraction) => {
         const text = int.data.options?.find(opt => opt.name === "message")?.value;
-        const embed = int.data.options?.find(opt => opt.name === "embed")?.value;
+        const plainText = int.data.options?.find(opt => opt.name === "plainText")?.value;
 
         if (!text) {
             await MessageHandler.rawer(int, {
@@ -51,7 +51,7 @@ export default {
         }
 
         let payload
-        if (embed) {
+        if (plainText) {
             payload = {
                 content: (text || "meow!") as string,
             }

@@ -26,18 +26,18 @@ export default {
                         }
                     ]
                 },
-                // {
-                //     type: Constants.ComponentTypes.CONTAINER,
-                //     components: [
-                //         {
-                //             type: Constants.ComponentTypes.TEXT_DISPLAY,
-                //             content: `### <:volt:1426666376197701683> **VoltRadio.lol Commands**
-                //             > **\`/volt\`**: Quickly check what's cooking on the radio!
-                //             > **\`/voltdata\`**: A more extended version, more data to look at.
-                //             > **\`/voltscoop\`**: A quick scoop of the public API, converted to a JSON file for you.`
-                //         }
-                //     ]
-                // },
+                {
+                    type: Constants.ComponentTypes.CONTAINER,
+                    components: [
+                        {
+                            type: Constants.ComponentTypes.TEXT_DISPLAY,
+                            content: `### <:volt:1426666376197701683> **VoltRadio.lol Commands**
+                            > **\`/volt\`**: Quickly check what's cooking on the radio!
+                            > **\`/voltdata\`**: A more extended version, more data to look at.
+                            > **\`/voltscoop\`**: A quick scoop of the public API, converted to a JSON file for you.`
+                        }
+                    ]
+                },
                 {
                     type: Constants.ComponentTypes.CONTAINER,
                     components: [
