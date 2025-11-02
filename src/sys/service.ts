@@ -173,7 +173,7 @@ async function start() {
                     components: [
                         {
                             type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: `### <:settings:1426875133385244703> ${app.user.username}#${app.user.discriminator} process started!`
+                            content: `### ⚙️ ${app.user.username}#${app.user.discriminator} process started!`
                         },
                         {
                             type: Constants.ComponentTypes.TEXT_DISPLAY,
@@ -205,7 +205,11 @@ async function start() {
                 const cmds = await loadCommands();
                 const command = cmds.find(c => c.name === name);
 
-                await interaction.defer();
+                if (command!.empheral) {
+                    await interaction.defer(Constants.MessageFlags.EPHEMERAL);
+                } else {
+                    await interaction.defer();
+                }
 
                 if (command!.guildOnly && !interaction.guild?.id) {
                     await MessageHandler.warning(interaction, "This command can only be used in servers.");
@@ -220,8 +224,6 @@ async function start() {
         } else if(interaction instanceof ComponentInteraction) {
             const customId = interaction.data.custom_id;
             consola.info(`Component interaction received: ${customId}`);
-
-            await interaction.defer();
 
             try {
                 const componentPath = path.resolve(__dirname, "..", "customs", `${customId}.js`);

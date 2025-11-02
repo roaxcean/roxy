@@ -12,6 +12,7 @@ export default {
     description: "helps u with finding commands, i guess",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
+    empheral: false,
 
     function: async (int: CommandInteraction) => {
 

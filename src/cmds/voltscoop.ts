@@ -18,6 +18,7 @@ export default {
     description: "A scoop of the VoltRadio.lol API",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
+    empheral: false,
 
     function: async (int: CommandInteraction) => {
         await MessageHandler.raw(int, {

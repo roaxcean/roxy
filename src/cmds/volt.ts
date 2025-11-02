@@ -19,6 +19,7 @@ export default {
     description: "What's cooking at VoltRadio.lol",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
+    empheral: false,
 
     function: async (int: CommandInteraction) => {
         const data = await fetchJSON<StationResponse>(

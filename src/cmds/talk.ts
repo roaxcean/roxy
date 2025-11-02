@@ -12,6 +12,7 @@ export default {
     description: "Make roxy say something...",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
+    empheral: false,
 
     options: [
         {

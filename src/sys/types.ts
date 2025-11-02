@@ -12,6 +12,7 @@ export interface Command {
     type: number;
     guildOnly: boolean;
     function: Function;
+    empheral: boolean;
 }
 
 // voltradio.lol demo (cmds/volt.ts, cmds/voltdata.ts);
