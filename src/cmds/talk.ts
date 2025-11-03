@@ -22,7 +22,7 @@ export default {
             required: true,
         },
         {
-            name: "plainText",
+            name: "plain",
             description: "Wrap it in a pretty embed??????",
             type: Constants.ApplicationCommandOptionTypes.BOOLEAN,
             required: false,
@@ -31,7 +31,7 @@ export default {
 
     function: async (int: CommandInteraction) => {
         const text = int.data.options?.find(opt => opt.name === "message")?.value;
-        const plainText = int.data.options?.find(opt => opt.name === "plainText")?.value;
+        const plainText = int.data.options?.find(opt => opt.name === "plain")?.value;
 
         if (!text) {
             await MessageHandler.rawer(int, {
