@@ -45,7 +45,7 @@ async function handleError(err: any) {
                         components: [
                             {
                                 type: Constants.ComponentTypes.TEXT_DISPLAY,
-                                content: `### <:settings:1426875133385244703> ${app} process errored!`
+                                content: `### <:settings:1426875133385244703> ${app.user.username}#${app.user.discriminator} process errored!`
                             },
                             {
                                 type: Constants.ComponentTypes.TEXT_DISPLAY,

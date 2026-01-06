@@ -4,8 +4,9 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "prestart": "tsc",
+    "build": "tsc",
     "start": "node ./src/index.js",
+    "dev":  "tsx ./src/index.ts",
     "lint": "npx eslint ."
   },
   "repository": {

@@ -173,7 +173,7 @@ async function start() {
                     components: [
                         {
                             type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: `### ⚙️ ${app.user.username}#${app.user.discriminator} process started!`
+                            content: `### <:settings:1426875133385244703> ${app.user.username}#${app.user.discriminator} process started!`
                         },
                         {
                             type: Constants.ComponentTypes.TEXT_DISPLAY,

@@ -9,7 +9,11 @@ import { config } from "dotenv";
 config({ override: true, quiet: true });
 
 const INTENTS = [
-    Constants.Intents.messageContent
+    Constants.Intents.messageContent,
+    Constants.Intents.guilds,
+    Constants.Intents.guildMessages,
+    Constants.Intents.guildMembers,
+    Constants.Intents.directMessages,
 ];
 
 const intentsBitfield = INTENTS.reduce((acc, v) => acc | v, 0);
@@ -28,6 +32,7 @@ const app = new Client(
         gateway: {
             intents: intentsBitfield,
         },
+        restMode: true,
         rest: {
             ratelimiterOffset: 0,
         }
