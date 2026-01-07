@@ -1,32 +1,27 @@
-```
-    ____  ____ _  ____  __
-   / __ \/ __ \ |/ /\ \/ /
-  / /_/ / / / /   /  \  / 
- / _, _/ /_/ /   |   / /  
-/_/ |_|\____/_/|_|  /_/   
-```
-## *R*arely *O*obeys, e*X*tremely *Y*appy
+<img src="/media/project_header.png" alt="Project Header" style="border-radius: 1rem; width: 150%; height: auto;">
 
-Roxy is a barebones implementation of a discord app, meant to build apps on top of it. I still plan on expanding what it
-can do, or just make it easier to work with in general...
-
-As of now, it has a simple `/talk` command to get settled into taking input with slash commands, and a few other ones who
-work with [Volt Radio](https://voltradio.lol/)'s API. (Notably: `/volt` and `/voltdata`.)
+> heya, it seems you found the roxy repo
+> 
+> it's nothing impressive, an implementation of a discord app which runs on [dysnomia](https://github.com/projectdysnomia/dysnomia/)
 
 ---
 
-## How to run it yourself?
+<img src="/media/project_sub_run.png" alt="Project Header" style="border-radius: 1rem; width: 150%; height: auto;">
 
-> You need to have intalled [NodeJS](https://nodejs.org/en/download) (and any other JS package manager, or use NodeJS's `npm`)
 
-First, fill out the `.env.example` to your liking, and then rename it to `.env`.
+> obviously, you need node to run it
+> 
+> fill out the `.env.example` as you wish, and **remane it to `.env`**
+> 
+> `npm install`, `npm run build`, and `npm run start`
+> 
+> feeling developmental? make changes to the ts code, and run `npm run dev` without needing to build first
 
-Then, just run:
-```bash
-npm i
-```
-Then:
-```bash
-npm run start
-```
-In the root folder. And then you're good to go! Any errors or technical data will be printed to the console.
+---
+
+> as you can see, this is more or less of a hobby project; while yeah i maintain it from time to time, and add new
+> features, this obviously will have some flaws and weird logic things that i might miss;
+> 
+> that said, if you do find any, please please please do make an issue or hit me up directly on [discord](http://discord.com/users/1160943839591288893)
+> 
+> thank you xoxo
