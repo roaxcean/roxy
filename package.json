@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node ./src/index.js",
-    "dev": "npx tsx ./src/index.ts",
+    "dev": "tsc && npx tsx ./src/index.ts",
     "lint": "npx eslint ."
   },
   "repository": {

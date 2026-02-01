@@ -14,7 +14,7 @@ export default {
     guildOnly: false,
     visibility: "public",
 
-    hidden: true,
+    hidden: false,
     ownerOnly: true,
 
     options: [

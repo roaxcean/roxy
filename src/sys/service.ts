@@ -21,6 +21,7 @@ import log from "./loggingHandler.js";
 import { isOwner } from "./permissions.js";
 import { MessageHandler } from "./messageHandler.js";
 import { Command } from "./types.js";
+import {setupPresence} from "./presence.js";
 
 config({ override: true, quiet: true });
 
@@ -49,38 +50,38 @@ export async function loadCommands(): Promise<Command[]> {
     return commandCache;
 }
 
-function setupPresence() {
-    if (process.env.APP_ACTIVITY_ENABLED === "false") return;
-
-    const apply = () => {
-        const validStatuses: SelfStatus[] = ["online", "idle", "dnd", "invisible"];
-        const status = validStatuses.includes(process.env.APP_SHOWAS as SelfStatus)
-            ? (process.env.APP_SHOWAS as SelfStatus)
-            : "online";
-
-        const activityTypes = {
-            playing: 0,
-            listening: 2,
-            watching: 3,
-            competing: 5,
-            custom: 4,
-            none: undefined,
-        } as const;
-
-        const key = (process.env.APP_ACTIVITY_TYPE || "none") as keyof typeof activityTypes;
-
-        app.editStatus(status, {
-            name: process.env.APP_ACTIVITY_TEXT ?? "Default status",
-            type: activityTypes[key],
-            state: key === "custom"
-                ? process.env.APP_ACTIVITY_CUSTOM
-                : undefined,
-        });
-    };
-
-    apply();
-    setInterval(apply, 60 * 60 * 1000);
-}
+// function setupPresence() {
+//     if (process.env.APP_ACTIVITY_ENABLED === "false") return;
+//
+//     const apply = () => {
+//         const validStatuses: SelfStatus[] = ["online", "idle", "dnd", "invisible"];
+//         const status = validStatuses.includes(process.env.APP_SHOWAS as SelfStatus)
+//             ? (process.env.APP_SHOWAS as SelfStatus)
+//             : "online";
+//
+//         const activityTypes = {
+//             playing: 0,
+//             listening: 2,
+//             watching: 3,
+//             competing: 5,
+//             custom: 4,
+//             none: undefined,
+//         } as const;
+//
+//         const key = (process.env.APP_ACTIVITY_TYPE || "none") as keyof typeof activityTypes;
+//
+//         app.editStatus(status, {
+//             name: process.env.APP_ACTIVITY_TEXT ?? "Default status",
+//             type: activityTypes[key],
+//             state: key === "custom"
+//                 ? process.env.APP_ACTIVITY_CUSTOM
+//                 : undefined,
+//         });
+//     };
+//
+//     apply();
+//     setInterval(apply, 60 * 60 * 1000);
+// }
 
 function deferInteraction(
     interaction: CommandInteraction,
@@ -179,7 +180,8 @@ export default async function start() {
     app.once("ready", async () => {
         consola.success("Connected!");
         await registerCommands();
-        setupPresence();
+
+        setupPresence(app);
 
         await log({
             components: [

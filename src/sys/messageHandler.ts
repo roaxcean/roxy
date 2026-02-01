@@ -93,7 +93,7 @@ export class MessageHandler {
         context?: string
     ) {
         return this.send(interaction, {
-            title: "❌ Something broke",
+            title: "<:cross:1467501434210877593> Something broke",
             fields: [
                 {
                     value: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\``,
@@ -109,7 +109,7 @@ export class MessageHandler {
         description?: string
     ) {
         return this.send(interaction, {
-            title: `ℹ️ ${title}`,
+            title: `<:info:1467501339729727662> ${title}`,
             description,
         });
     }
@@ -119,7 +119,7 @@ export class MessageHandler {
         description: string
     ) {
         return this.send(interaction, {
-            title: "✅ Done!",
+            title: "<:check:1435737072085237930> Done!",
             description,
         });
     }
@@ -129,7 +129,7 @@ export class MessageHandler {
         description: string
     ) {
         return this.send(interaction, {
-            title: "⚠️ Heads up",
+            title: "<:alert:1467501544294322405> Heads up",
             description,
         });
     }

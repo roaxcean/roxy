@@ -15,7 +15,7 @@ export default {
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
 
     visibility: "public",
-    hidden: true,
+    hidden: false,
     ownerOnly: true,
 
     async function(interaction: CommandInteraction) {
