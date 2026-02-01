@@ -4,6 +4,7 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -11,8 +12,7 @@ import { consola } from "consola";
 import {
     CommandInteraction,
     ComponentInteraction,
-    Constants,
-    SelfStatus,
+    Constants
 } from "@projectdysnomia/dysnomia";
 import { config } from "dotenv";
 
@@ -30,58 +30,61 @@ const __dirname = path.dirname(__filename);
 
 let commandCache: Command[] = [];
 
-export async function loadCommands(): Promise<Command[]> {
-    if (commandCache.length) return commandCache;
+async function buildCommands(dir = path.resolve(__dirname, "..", "commands")): Promise<any[]> {
+    const entries = await readdir(dir, { withFileTypes: true });
+    const commands: any[] = [];
 
-    const cmdsDir = path.resolve(__dirname, "..", "commands");
-    const files = await readdir(cmdsDir);
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
 
-    commandCache = await Promise.all(
-        files
-            .filter(f => f.endsWith(".js"))
-            .map(async file => {
-                const mod = await import(
-                    pathToFileURL(path.join(cmdsDir, file)).href
-                    );
-                return (mod.default ?? mod) as Command;
-            })
-    );
+        if (entry.isDirectory()) {
+            // subcommand group
+            const subFiles = await readdir(fullPath);
+            const options: any[] = [];
 
-    return commandCache;
+            for (const file of subFiles) {
+                if (!file.endsWith(".js") && !file.endsWith(".ts")) continue;
+
+                const mod = await import(pathToFileURL(path.join(fullPath, file)).href);
+                const subCmd = mod.default ?? mod;
+
+                options.push({
+                    type: Constants.ApplicationCommandOptionTypes.SUB_COMMAND,
+                    name: subCmd.name,
+                    description: subCmd.description,
+                    options: subCmd.options ?? [],
+                });
+            }
+
+            commands.push({
+                name: entry.name,
+                description: `Group: ${entry.name}`,
+                type: Constants.ApplicationCommandTypes.CHAT_INPUT,
+                options,
+            });
+
+        } else if (entry.isFile() && (entry.name.endsWith(".js") || entry.name.endsWith(".ts"))) {
+            const mod = await import(pathToFileURL(fullPath).href);
+            const cmd = mod.default ?? mod;
+
+            commands.push({
+                name: cmd.name,
+                description: cmd.description,
+                type: Constants.ApplicationCommandTypes.CHAT_INPUT,
+                options: cmd.options ?? [],
+            });
+        }
+    }
+
+    return commands;
 }
 
-// function setupPresence() {
-//     if (process.env.APP_ACTIVITY_ENABLED === "false") return;
-//
-//     const apply = () => {
-//         const validStatuses: SelfStatus[] = ["online", "idle", "dnd", "invisible"];
-//         const status = validStatuses.includes(process.env.APP_SHOWAS as SelfStatus)
-//             ? (process.env.APP_SHOWAS as SelfStatus)
-//             : "online";
-//
-//         const activityTypes = {
-//             playing: 0,
-//             listening: 2,
-//             watching: 3,
-//             competing: 5,
-//             custom: 4,
-//             none: undefined,
-//         } as const;
-//
-//         const key = (process.env.APP_ACTIVITY_TYPE || "none") as keyof typeof activityTypes;
-//
-//         app.editStatus(status, {
-//             name: process.env.APP_ACTIVITY_TEXT ?? "Default status",
-//             type: activityTypes[key],
-//             state: key === "custom"
-//                 ? process.env.APP_ACTIVITY_CUSTOM
-//                 : undefined,
-//         });
-//     };
-//
-//     apply();
-//     setInterval(apply, 60 * 60 * 1000);
-// }
+export async function loadCommands(): Promise<any[]> {
+    if (commandCache.length) return commandCache;
+
+    commandCache = await buildCommands();
+    return commandCache;
+}
 
 function deferInteraction(
     interaction: CommandInteraction,
@@ -123,7 +126,20 @@ async function handleCommand(interaction: CommandInteraction) {
     }
 
     try {
-        await command.function(interaction);
+        const subName = interaction.data.options?.[0]?.name;
+        if (subName) {
+            const subPath = path.join(__dirname, "..", "commands", command.name, `${subName}.js`);
+            const mod = await import(pathToFileURL(subPath).href);
+            const handler = mod.default ?? mod;
+
+            if (handler.function) {
+                await handler.function(interaction);
+            } else {
+                await MessageHandler.info(interaction, "Subcommand", "No function defined for this subcommand.");
+            }
+        } else {
+            await command.function(interaction);
+        }
     } catch (err) {
         consola.error(`${name} failed`, err);
         await MessageHandler.error(interaction, err, `Command: ${name}`);
@@ -181,7 +197,7 @@ export default async function start() {
         consola.success("Connected!");
         await registerCommands();
 
-        setupPresence(app);
+        await setupPresence(app);
 
         await log({
             components: [

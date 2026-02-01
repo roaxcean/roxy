@@ -4,9 +4,9 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { consola } from "consola";
 import { Constants } from "@projectdysnomia/dysnomia";
-import app from "./appHandler.js"
 import log from "./loggingHandler.js";
 const maxTrace = process.env.NODE_ENV === "development" ? Infinity : 8;
 

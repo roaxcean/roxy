@@ -4,6 +4,7 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import {Constants, InteractionContent, InteractionContentEdit} from "@projectdysnomia/dysnomia";
 import { config } from "dotenv";
 import app from "../sys/appHandler.js"

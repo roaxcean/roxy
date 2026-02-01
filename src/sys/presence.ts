@@ -4,6 +4,7 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { Constants, Client } from "@projectdysnomia/dysnomia";
 import { loadPresence, savePresence } from "./presenceStore.js";
 

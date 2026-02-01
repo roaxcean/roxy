@@ -4,9 +4,10 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
-import { setCustomStatus } from "../sys/presence.js";
-import {MessageHandler} from "../sys/messageHandler.js";
+import { setCustomStatus } from "../../sys/presence.js";
+import {MessageHandler} from "../../sys/messageHandler.js";
 
 export default {
     name: "status",

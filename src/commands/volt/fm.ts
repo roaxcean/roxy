@@ -4,9 +4,10 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
-import { MessageHandler } from "../sys/messageHandler.js";
-import { StationResponse } from "../sys/types.js";
+import { MessageHandler } from "../../sys/messageHandler.js";
+import { StationResponse } from "../../sys/types.js";
 
 async function fetchJSON<T>(url: string, errorMessage: string): Promise<T> {
     const res = await fetch(url);
@@ -15,7 +16,7 @@ async function fetchJSON<T>(url: string, errorMessage: string): Promise<T> {
 }
 
 export default {
-    name: "volt",
+    name: "fm",
     description: "What's cooking at VoltRadio.lol",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,

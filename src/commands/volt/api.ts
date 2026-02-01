@@ -4,8 +4,9 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
-import { MessageHandler } from "../sys/messageHandler.js";
+import { MessageHandler } from "../../sys/messageHandler.js";
 
 async function fetchTXT(url: string, errorMessage: string): Promise<string> {
     const res = await fetch(url);
@@ -14,7 +15,7 @@ async function fetchTXT(url: string, errorMessage: string): Promise<string> {
 }
 
 export default {
-    name: "voltscoop",
+    name: "api",
     description: "A scoop of the VoltRadio.lol API",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,

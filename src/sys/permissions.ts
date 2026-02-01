@@ -4,6 +4,7 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { CommandInteraction } from "@projectdysnomia/dysnomia";
 
 const OWNER_ID = process.env.APP_OWNER_ID;

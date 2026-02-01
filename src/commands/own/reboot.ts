@@ -4,10 +4,11 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
 import { spawn } from "node:child_process";
-import { MessageHandler } from "../sys/messageHandler.js";
-import app from "../sys/appHandler.js";
+import { MessageHandler } from "../../sys/messageHandler.js";
+import app from "../../sys/appHandler.js";
 
 export default {
     name: "reboot",

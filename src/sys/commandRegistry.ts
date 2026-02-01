@@ -4,6 +4,7 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { Command } from "./types.js";
 import { loadCommands } from "./service.js";
 

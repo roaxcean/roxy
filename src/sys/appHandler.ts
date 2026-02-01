@@ -4,6 +4,7 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { Client, Constants } from "@projectdysnomia/dysnomia";
 import { config } from "dotenv";
 config({ override: true, quiet: true });

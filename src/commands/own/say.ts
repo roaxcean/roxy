@@ -4,11 +4,12 @@
 //     / _, _/ /_/ />  </ /_/ /
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
+
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
-import { MessageHandler } from "../sys/messageHandler.js";
+import { MessageHandler } from "../../sys/messageHandler.js";
 
 export default {
-    name: "talk",
+    name: "say",
     description: "Make roxy say something...",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
