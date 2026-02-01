@@ -1,4 +1,9 @@
-// src/sys/messageHandler.ts
+//        ____
+//       / __ \____  _  ____  __
+//      / /_/ / __ \| |/_/ / / /
+//     / _, _/ /_/ />  </ /_/ /
+//    /_/ |_|\____/_/|_|\__, /
+//                     /____/
 import {
     AnyInteractionGateway,
     Constants,
@@ -6,150 +11,143 @@ import {
     InteractionContentEdit,
 } from "@projectdysnomia/dysnomia";
 
-/**
- * MessageHandler — wraps messages in Discord Components V2 (REST API v10 compatible)
- * Includes “raw send” for fully custom payloads.
- */
 export class MessageHandler {
-    static async send(
+    private static respond(
         interaction: AnyInteractionGateway,
-        options: InteractionContent | InteractionContentEdit
+        payload: InteractionContent | InteractionContentEdit
     ) {
         if ("editOriginalMessage" in interaction) {
-            return interaction.editOriginalMessage(options);
-        } else {
-            // @ts-ignore Dysnomia typings lag behind V2
-            return interaction.createMessage(options);
+            return interaction.editOriginalMessage(payload);
         }
+
+        // @ts-expect-error dysnomia typing is...weird
+        return interaction.createMessage(payload);
     }
 
-    /** Build a friendly V2 container message */
-    private static container({
-                                 title,
-                                 description,
-                                 color,
-                                 fields,
-                             }: {
+    private static container(options: {
         title?: string;
         description?: string;
-        color?: number;
-        fields?: { name: string; value: string }[];
+        fields?: { value: string }[];
     }) {
         const components: any[] = [];
 
-        if (title) {
+        if (options.title) {
             components.push({
                 type: Constants.ComponentTypes.TEXT_DISPLAY,
-                content: title,
+                content: "## "+options.title,
             });
         }
 
-        if (description) {
+        if (options.description) {
             components.push({
                 type: Constants.ComponentTypes.TEXT_DISPLAY,
-                content: description,
+                content: options.description,
             });
         }
 
-        if (fields?.length) {
-            fields.forEach((f) => {
-                components.push({
-                    type: Constants.ComponentTypes.SEPARATOR,
-                    divider: true,
-                    spacing: Constants.SeparatorSpacingSize.SMALL,
-                });
-                components.push({
-                    type: Constants.ComponentTypes.SECTION,
-                    components: [
-                        {
-                            type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: `• ${f.name}: ${f.value}`,
-                        },
-                    ],
-                });
-            });
+        if (options.fields?.length) {
+            for (const field of options.fields) {
+                components.push(
+                    {
+                        type: Constants.ComponentTypes.TEXT_DISPLAY,
+                        content: `${field.value}`,
+                    },
+                );
+            }
         }
 
         return [
             {
                 type: Constants.ComponentTypes.CONTAINER,
-                accent_color: color,
                 components,
             },
         ];
     }
 
-    static async error(
+    private static send(
+        interaction: AnyInteractionGateway,
+        options: {
+            title?: string;
+            description?: string;
+            fields?: { value: string }[];
+            forceEphemeral?: boolean;
+        }
+    ) {
+        return this.respond(interaction, {
+            components: this.container({
+                title: options.title,
+                description: options.description,
+                fields: options.fields,
+            }),
+            flags:
+                Constants.MessageFlags.IS_COMPONENTS_V2 |
+                (options.forceEphemeral
+                    ? Constants.MessageFlags.EPHEMERAL
+                    : 0),
+        });
+    }
+
+    static error(
         interaction: AnyInteractionGateway,
         error: unknown,
         context?: string
     ) {
-        const fields = [
-            {
-                name: "Details",
-                value: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\``,
-            },
-            ...(context ? [{ name: "Context", value: context }] : []),
-        ];
-
         return this.send(interaction, {
-            components: this.container({
-                title: "❌ Oops!",
-                description: "Something went wrong while executing your command.",
-                fields,
-            }),
-            flags: Constants.MessageFlags.EPHEMERAL | Constants.MessageFlags.IS_COMPONENTS_V2,
+            title: "❌ Something broke",
+            fields: [
+                {
+                    value: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\``,
+                },
+                ...(context ? [{ value: context }] : []),
+            ],
         });
     }
 
-    static async info(
+    static info(
         interaction: AnyInteractionGateway,
         title: string,
+        description?: string
+    ) {
+        return this.send(interaction, {
+            title: `ℹ️ ${title}`,
+            description,
+        });
+    }
+
+    static success(
+        interaction: AnyInteractionGateway,
         description: string
     ) {
         return this.send(interaction, {
-            components: this.container({
-                title: `ℹ️ ${title}`,
-                description,
-            }),
-            flags: Constants.MessageFlags.EPHEMERAL | Constants.MessageFlags.IS_COMPONENTS_V2,
+            title: "✅ Done!",
+            description,
         });
     }
 
-    static async success(interaction: AnyInteractionGateway, description: string) {
-        return this.send(interaction, {
-            components: this.container({
-                title: "✅ All good!",
-                description,
-            }),
-            flags: Constants.MessageFlags.EPHEMERAL | Constants.MessageFlags.IS_COMPONENTS_V2,
-        });
-    }
-
-    static async warning(interaction: AnyInteractionGateway, description: string) {
-        return this.send(interaction, {
-            components: this.container({
-                title: "⚠️ Heads up!",
-                description,
-            }),
-            flags: Constants.MessageFlags.EPHEMERAL | Constants.MessageFlags.IS_COMPONENTS_V2,
-        });
-    }
-
-    static async raw(
+    static warning(
         interaction: AnyInteractionGateway,
-        payload: Partial<InteractionContent> | Partial<InteractionContentEdit>
+        description: string
     ) {
         return this.send(interaction, {
+            title: "⚠️ Heads up",
+            description,
+        });
+    }
+
+    static raw(
+        interaction: AnyInteractionGateway,
+        payload: Partial<InteractionContent | InteractionContentEdit>
+    ) {
+        return this.respond(interaction, {
             ...payload,
             flags: Constants.MessageFlags.IS_COMPONENTS_V2,
         });
     }
 
-    static async rawer(
+    static rawUnsafe(
         interaction: AnyInteractionGateway,
-        payload: Partial<InteractionContent> | Partial<InteractionContentEdit>
+        payload: Partial<InteractionContent | InteractionContentEdit>
     ) {
-        return this.send(interaction, payload);
+        return this.respond(interaction, payload as any);
     }
 }

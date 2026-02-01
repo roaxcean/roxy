@@ -12,7 +12,10 @@ export default {
     description: "Make roxy say something...",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
-    empheral: false,
+    visibility: "public",
+
+    hidden: true,
+    ownerOnly: true,
 
     options: [
         {
@@ -34,7 +37,7 @@ export default {
         const plainText = int.data.options?.find(opt => opt.name === "plain")?.value;
 
         if (!text) {
-            await MessageHandler.rawer(int, {
+            await MessageHandler.rawUnsafe(int, {
                 components: [
                     {
                         type: Constants.ComponentTypes.CONTAINER,
@@ -73,6 +76,6 @@ export default {
             }
         }
 
-        await MessageHandler.rawer(int, payload)
+        await MessageHandler.rawUnsafe(int, payload)
     },
 };

@@ -9,10 +9,17 @@
 export interface Command {
     name: string;
     description: string;
-    type: number;
-    guildOnly: boolean;
     function: Function;
-    empheral: boolean;
+
+    type?: number;
+    guildOnly?: boolean;
+    visibility?: "ephemeral" | "public";
+
+    category?: string;          // grouping in /help
+    hidden?: boolean;           // hide from help
+    usage?: string;             // unused for now
+
+    ownerOnly?: boolean;
 }
 
 // voltradio.lol demo (cmds/volt.ts, cmds/voltdata.ts);

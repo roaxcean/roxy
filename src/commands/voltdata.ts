@@ -19,13 +19,22 @@ export default {
     description: "What's cooking at VoltRadio.lol (more)",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
-    empheral: false,
+    visibility: "public",
+
+    category: "VoltRadio",
 
     function: async (int: CommandInteraction) => {
-        const data = await fetchJSON<StationResponse>(
-            "https://manage.voltradio.lol/api/nowplaying/voltradio",
-            "Couldn't fetch VoltRadio data."
-        );
+        let data: StationResponse
+
+        try {
+            data = await fetchJSON<StationResponse>(
+                "https://manage.voltradio.lol/api/nowplaying/voltradio",
+                "Couldn't fetch VoltRadio data."
+            );
+        } catch (e: any | Error) {
+            MessageHandler.error(int, e);
+            return;
+        }
 
         const thumbnail = `https://api.synkradio.co.uk/spotify/cover?format=webp&width=576&height=576&artist=${
             data.now_playing.song.artist.split(";")[0].replaceAll(" ", "%20")

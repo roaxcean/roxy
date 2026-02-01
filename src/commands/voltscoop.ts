@@ -18,9 +18,22 @@ export default {
     description: "A scoop of the VoltRadio.lol API",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
-    empheral: false,
+    visibility: "public",
+
+    category: "VoltRadio",
 
     function: async (int: CommandInteraction) => {
+        let data
+        try {
+            data = await fetchTXT(
+                "https://manage.voltradio.lol/api/nowplaying/voltradio",
+                "Couldn't fetch VoltRadio data."
+            )
+        } catch (e: any | Error) {
+            MessageHandler.error(int, e);
+            return;
+        }
+
         await MessageHandler.raw(int, {
             components: [
                 {
@@ -41,12 +54,7 @@ export default {
             ],
             attachments: [{
                 filename: "voltapi.json",
-                file: Buffer.from(
-                    await fetchTXT(
-                        "https://manage.voltradio.lol/api/nowplaying/voltradio",
-                        "Couldn't fetch VoltRadio data."
-                    )
-                )
+                file: Buffer.from(data)
             }]
         });
     },

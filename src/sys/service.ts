@@ -8,62 +8,73 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { consola } from "consola";
-import { setTimeout as wait } from "node:timers/promises";
-import {AnyInteractionGateway, ComponentInteraction, Constants, SelfStatus} from "@projectdysnomia/dysnomia";
+import {
+    CommandInteraction,
+    ComponentInteraction,
+    Constants,
+    SelfStatus,
+} from "@projectdysnomia/dysnomia";
 import { config } from "dotenv";
-config({ override: true, quiet: true });
 
 import app from "./appHandler.js";
-import log from "./loggingHandler.js"
-import { Command } from "./types.js";
+import log from "./loggingHandler.js";
+import { isOwner } from "./permissions.js";
 import { MessageHandler } from "./messageHandler.js";
+import { Command } from "./types.js";
+
+config({ override: true, quiet: true });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+let commandCache: Command[] = [];
+
 export async function loadCommands(): Promise<Command[]> {
-    const cmdsDir = path.resolve(__dirname, "..", "cmds");
+    if (commandCache.length) return commandCache;
+
+    const cmdsDir = path.resolve(__dirname, "..", "commands");
     const files = await readdir(cmdsDir);
 
-    const commands: Command[] = [];
+    commandCache = await Promise.all(
+        files
+            .filter(f => f.endsWith(".js"))
+            .map(async file => {
+                const mod = await import(
+                    pathToFileURL(path.join(cmdsDir, file)).href
+                    );
+                return (mod.default ?? mod) as Command;
+            })
+    );
 
-    for (const file of files) {
-        if (!file.endsWith(".js")) continue;
-
-        const cmdModule = await import(pathToFileURL(path.join(cmdsDir, file)).href);
-        const cmd = cmdModule.default ?? cmdModule;
-
-        commands.push(cmd as Command);
-    }
-
-    return commands;
+    return commandCache;
 }
 
-function setActivity() {
+function setupPresence() {
     if (process.env.APP_ACTIVITY_ENABLED === "false") return;
 
     const apply = () => {
         const validStatuses: SelfStatus[] = ["online", "idle", "dnd", "invisible"];
-        const status: SelfStatus = validStatuses.includes(process.env.APP_SHOWAS as SelfStatus)
+        const status = validStatuses.includes(process.env.APP_SHOWAS as SelfStatus)
             ? (process.env.APP_SHOWAS as SelfStatus)
             : "online";
 
-        const activities = {
+        const activityTypes = {
             playing: 0,
-            watching: 3,
             listening: 2,
+            watching: 3,
             competing: 5,
             custom: 4,
-            none: undefined
+            none: undefined,
         } as const;
 
-        const typeKey = (process.env.APP_ACTIVITY_TYPE || "none") as keyof typeof activities;
-        const activityType = activities[typeKey];
+        const key = (process.env.APP_ACTIVITY_TYPE || "none") as keyof typeof activityTypes;
 
         app.editStatus(status, {
             name: process.env.APP_ACTIVITY_TEXT ?? "Default status",
-            type: activityType,
-            state: typeKey === "custom" ? process.env.APP_ACTIVITY_CUSTOM : undefined,
+            type: activityTypes[key],
+            state: key === "custom"
+                ? process.env.APP_ACTIVITY_CUSTOM
+                : undefined,
         });
     };
 
@@ -71,100 +82,104 @@ function setActivity() {
     setInterval(apply, 60 * 60 * 1000);
 }
 
-async function safeRequest(requestHandler: any, method: string, endpoint: string, auth: boolean, body?: any, retries = 3) {
-    let attempt = 0;
-    while (attempt < retries) {
-        try {
-            return await requestHandler.request(method, endpoint, auth, body);
-        } catch (err: any) {
-            attempt++;
-            const status = err?.status || err?.code;
+function deferInteraction(
+    interaction: CommandInteraction,
+    visibility: "ephemeral" | "public" = "public"
+) {
+    return visibility === "ephemeral"
+        ? interaction.defer(Constants.MessageFlags.EPHEMERAL)
+        : interaction.defer();
+}
 
-            if (status === 429) {
-                const retryAfter = err.response?.headers?.get("Retry-After") || 2;
-                consola.warn(`Rate-limited. Retrying after ${retryAfter}s...`);
-                await wait(Number(retryAfter) * 1000);
-            } else if (attempt < retries) {
-                const delay = 500 * attempt;
-                consola.warn(`Retrying ${method} ${endpoint} (attempt ${attempt}/${retries}) in ${delay}ms...`);
-                await wait(delay);
-            } else {
-                consola.error(`Request failed after ${retries} attempts:`, err);
-                throw err;
-            }
+async function handleCommand(interaction: CommandInteraction) {
+    const name = interaction.data.name;
+    consola.info(`Command received: ${name}`);
+
+    const commands = await loadCommands();
+    const command = commands.find(c => c.name === name);
+
+    if (!command) {
+        await MessageHandler.warning(interaction, "Unknown command.");
+        return;
+    }
+
+    await deferInteraction(interaction, command.visibility);
+
+    if (command.guildOnly && !interaction.guild?.id) {
+        await MessageHandler.warning(
+            interaction,
+            "This command can only be used in servers."
+        );
+        return;
+    }
+
+    if (command.ownerOnly && !isOwner(interaction)) {
+        await MessageHandler.warning(
+            interaction,
+            "This command is restricted to the bot owner."
+        );
+        return;
+    }
+
+    try {
+        await command.function(interaction);
+    } catch (err) {
+        consola.error(`${name} failed`, err);
+        await MessageHandler.error(interaction, err, `Command: ${name}`);
+    }
+}
+
+async function handleComponent(interaction: ComponentInteraction) {
+    const id = interaction.data.custom_id;
+    consola.info(`Component interaction: ${id}`);
+
+    try {
+        const file = path.resolve(__dirname, "..", "components", `${id}.js`);
+        const mod = await import(pathToFileURL(file).href);
+        const handler = mod.default ?? mod;
+
+        if (typeof handler !== "function") {
+            throw new Error(`Component "${id}" has no handler`);
         }
+
+        await handler(interaction);
+    } catch (err: any) {
+        consola.error(`Component ${id} failed`, err);
+        await MessageHandler.error(interaction, err, `Component: ${id}`);
     }
 }
 
 async function registerCommands() {
-    consola.start("Registering Discord commands...");
+    consola.start("Registering Discord commands…");
 
-    try {
-        const appId = app.user?.id;
-        if (!appId) throw new Error("App user is not initialized. Make sure the bot is connected.");
+    const appId = app.user?.id;
+    if (!appId) throw new Error("App user not ready");
 
-        const existingCommands: any[] = await safeRequest(app.requestHandler, "GET", `/applications/${appId}/commands`, true);
-        const localCommands: Command[] = await loadCommands();
-        const formattedCommands = localCommands.map(cmd => ({
-            ...cmd,
-            integration_types: [0, 1],
-            contexts: [0, 1, 2],
-        }));
+    const request = app.requestHandler.request.bind(app.requestHandler);
 
-        const toCreateOrUpdate = formattedCommands.filter(localCmd => {
-            const existing = existingCommands.find(c => c.name === localCmd.name && c.type === localCmd.type);
-            return !existing || JSON.stringify(existing) !== JSON.stringify(localCmd);
-        });
+    const local = await loadCommands();
 
-        const toDelete = existingCommands.filter(c => !formattedCommands.some(l => l.name === c.name && l.type === c.type));
+    const formatted = local.map(cmd => ({
+        ...cmd,
+        integration_types: [0, 1],
+        contexts: [0, 1, 2],
+    }));
 
-        for (const cmd of toCreateOrUpdate) {
-            try {
-                await safeRequest(app.requestHandler, "POST", `/applications/${appId}/commands`, true, cmd);
-                consola.success(`Upserted: ${cmd.name}`);
-            } catch (err) {
-                consola.error(`Failed to upsert command '${cmd.name}':`, err);
-            }
-        }
-
-        for (const cmd of toDelete) {
-            try {
-                await safeRequest(app.requestHandler, "DELETE", `/applications/${appId}/commands/${cmd.id}`, true);
-                consola.warn(`Deleted stale command: ${cmd.name}`);
-            } catch (err) {
-                consola.error(`Failed to delete '${cmd.name}':`, err);
-            }
-        }
-
-        const afterSync = await safeRequest(app.requestHandler, "GET", `/applications/${appId}/commands`, true);
-        const missing = formattedCommands.filter(cmd => !afterSync.find((ac: any) => ac.name === cmd.name));
-
-        if (missing.length > 0) {
-            consola.warn("Some commands didn’t register on the first pass, retrying...");
-            for (const cmd of missing) {
-                try {
-                    await safeRequest(app.requestHandler, "POST", `/applications/${appId}/commands`, true, cmd);
-                    consola.success(`Re-registered: ${cmd.name}`);
-                } catch (err) {
-                    consola.error(`Persistent failure registering '${cmd.name}':`, err);
-                }
-            }
-        }
-
-        consola.success("All global commands verified and synchronized successfully.");
-    } catch (error) {
-        consola.error("Fatal error during command registration:", error);
+    for (const cmd of formatted) {
+        await request("POST", `/applications/${appId}/commands`, true, cmd);
+        consola.success(`Upserted: ${cmd.name}`);
     }
+
+    consola.success("Commands synchronized");
 }
 
-async function start() {
-    consola.info("Connecting to Discord...");
+export default async function start() {
+    consola.info("Connecting to Discord…");
 
     app.once("ready", async () => {
-        consola.success("Connected to Discord!");
+        consola.success("Connected!");
         await registerCommands();
-        setActivity();
-        consola.success("The App is ready!");
+        setupPresence();
 
         await log({
             components: [
@@ -173,7 +188,7 @@ async function start() {
                     components: [
                         {
                             type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: `### <:settings:1426875133385244703> ${app.user.username}#${app.user.discriminator} process started!`
+                            content: `### <:settings:1426875133385244703> ${app.user.username}#${app.user.discriminator} process started!`,
                         },
                         {
                             type: Constants.ComponentTypes.TEXT_DISPLAY,
@@ -187,83 +202,27 @@ async function start() {
                                     }`
                             }`
                         }
-                    ]
+                    ],
                 },
-                {
-                    type: Constants.ComponentTypes.SEPARATOR
-                }
             ],
-        })
+        });
+
+        consola.success("App ready");
     });
 
-    app.on("interactionCreate", async (interaction: AnyInteractionGateway) => {
+    app.on("interactionCreate", async interaction => {
         if (interaction.type === Constants.InteractionTypes.APPLICATION_COMMAND) {
-            const { name } = interaction.data;
-            consola.info(`Received command: ${name}`);
-
-            try {
-                const cmds = await loadCommands();
-                const command = cmds.find(c => c.name === name);
-
-                if (command!.empheral) {
-                    await interaction.defer(Constants.MessageFlags.EPHEMERAL);
-                } else {
-                    await interaction.defer();
-                }
-
-                if (command!.guildOnly && !interaction.guild?.id) {
-                    await MessageHandler.warning(interaction, "This command can only be used in servers.");
-                    return;
-                }
-
-                if (command) await command.function(interaction);
-            } catch (error) {
-                await MessageHandler.error(interaction, error, `Command: ${name}`);
-                consola.warn(name, "- Command execution error:", error);
-            }
-        } else if(interaction instanceof ComponentInteraction) {
-            const customId = interaction.data.custom_id;
-            consola.info(`Component interaction received: ${customId}`);
-
-            try {
-                const componentPath = path.resolve(__dirname, "..", "customs", `${customId}.js`);
-                const module = await import(pathToFileURL(componentPath).href);
-                const handler = module.default ?? module;
-
-                if (typeof handler !== "function") {
-                    throw new Error(`Component handler for ${customId} does not export a function`);
-                }
-
-                await handler(interaction);
-
-            } catch (err: any | Error) {
-                consola.error(`Failed to handle component: ${customId}`, err);
-                await MessageHandler.raw(interaction, {
-                    components: [
-                        {
-                            type: Constants.ComponentTypes.CONTAINER,
-                            components: [
-                                {
-                                    type: Constants.ComponentTypes.TEXT_DISPLAY,
-                                    content: err ? err.message : err,
-                                }
-                            ]
-                        }
-                    ]
-                });
-            }
-        } else {
-            return;
+            await handleCommand(interaction);
+        } else if (interaction instanceof ComponentInteraction) {
+            await handleComponent(interaction);
         }
     });
 
     process.on("SIGINT", () => {
-        consola.warn("Killing the bot...");
+        consola.warn("Shutting down…");
         app.disconnect({ reconnect: false });
         process.exit(0);
     });
 
     await app.connect();
 }
-
-export default start;
