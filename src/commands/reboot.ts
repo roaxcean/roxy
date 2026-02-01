@@ -7,6 +7,7 @@
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
 import { spawn } from "node:child_process";
 import { MessageHandler } from "../sys/messageHandler.js";
+import app from "../sys/appHandler.js";
 
 export default {
     name: "reboot",
@@ -41,5 +42,7 @@ export default {
 
             process.exit(0);
         }, 1500);
+
+        app.disconnect({ reconnect: false });
     },
 };
