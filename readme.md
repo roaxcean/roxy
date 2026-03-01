@@ -13,9 +13,11 @@
 > 
 > fill out the `.env.example` as you wish, and **remane it to `.env`**
 > 
+> some more advanced options are located in: `data/settings.json`, edit accordingly *(mode details will be added soon-ish)*
+> 
 > `npm install`, `npm run build`, and `npm run start`
 > 
-> feeling developmental? make changes to the ts code, and run `npm run dev` without needing to build first
+> feeling developmental? make changes to the ts code, and run `npm run start` without needing to build first
 
 ---
 
