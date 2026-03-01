@@ -6,32 +6,43 @@
 //                     /____/
 
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
-import { setCustomStatus } from "../../sys/presence.js";
-import {MessageHandler} from "../../sys/messageHandler.js";
+import { MessageHandler } from "../../sys/messageHandler.js";
+import { getOption } from "../../sys/optionResolver.js";
+import { setOnlineStatus, OnlineStatus } from "../../sys/presence.js";
+
+const STATUS_LABELS: Record<OnlineStatus, string> = {
+    online:    "Online",
+    idle:      "Idle",
+    dnd:       "Do Not Disturb",
+    invisible: "Invisible",
+};
 
 export default {
     name: "status",
-    description: "Update roxy's status",
-    type: Constants.ApplicationCommandTypes.CHAT_INPUT,
-
-    visibility: "public",
-    hidden: false,
+    description: "Set Roxy's online status",
+    visibility: "ephemeral",
     ownerOnly: true,
+    hidden: true,
 
     options: [
         {
-            name: "text",
-            description: "Custom status text",
+            name: "status",
+            description: "Online status to set",
             type: Constants.ApplicationCommandOptionTypes.STRING,
             required: true,
-        }
+            choices: [
+                { name: "Online",            value: "online"    },
+                { name: "Idle",             value: "idle"      },
+                { name: "Do Not Disturb",   value: "dnd"       },
+                { name: "Invisible",        value: "invisible" },
+            ],
+        },
     ],
 
     async function(interaction: CommandInteraction) {
-        const text = interaction.data.options?.find(o => o.name === "text")?.value as string;
+        const status = getOption<OnlineStatus>(interaction, "status")!;
 
-        await setCustomStatus(text);
-
-        MessageHandler.success(interaction, "Status changed successfully!");
+        await setOnlineStatus(status);
+        await MessageHandler.success(interaction, `Online status set to **${STATUS_LABELS[status]}**.`);
     },
 };

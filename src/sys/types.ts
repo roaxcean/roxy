@@ -5,24 +5,44 @@
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
 
-// roxy defaults
+export interface CooldownConfig {
+    /** Duration in milliseconds */
+    duration: number;
+    /** Scope of the cooldown bucket */
+    scope: "user" | "guild" | "global";
+}
+
+export interface SubCommand {
+    name: string;
+    description: string;
+    options?: any[];
+    function: () => Promise<void>;
+}
+
 export interface Command {
     name: string;
     description: string;
-    function: Function;
+    function: () => Promise<void>;
 
     type?: number;
+    options?: any[];
+
+    /** Restrict to servers only */
     guildOnly?: boolean;
+    /** Restrict to the bot owner only (inherited by all subcommands) */
+    ownerOnly?: boolean;
+    /** Whether the initial defer + response is ephemeral */
     visibility?: "ephemeral" | "public";
 
-    category?: string;          // grouping in /help
-    hidden?: boolean;           // hide from help
-    usage?: string;             // unused for now
+    /** Grouping label shown in /help */
+    category?: string;
+    /** Exclude from /help listing */
+    hidden?: boolean;
 
-    ownerOnly?: boolean;
+    cooldown?: CooldownConfig;
 }
 
-// voltradio.lol demo (cmds/volt.ts, cmds/voltdata.ts);
+// voltradio.me
 export interface StationResponse {
     station: {
         id: number;

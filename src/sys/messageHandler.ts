@@ -12,57 +12,46 @@ import {
     InteractionContentEdit,
 } from "@projectdysnomia/dysnomia";
 
-export class MessageHandler {
-    private static respond(
-        interaction: AnyInteractionGateway,
-        payload: InteractionContent | InteractionContentEdit
-    ) {
-        if ("editOriginalMessage" in interaction) {
-            return interaction.editOriginalMessage(payload);
-        }
+type AnyPayload = Partial<InteractionContent> | Partial<InteractionContentEdit>;
 
-        // @ts-expect-error dysnomia typing is...weird
-        return interaction.createMessage(payload);
+export class MessageHandler {
+
+    private static respond(interaction: AnyInteractionGateway, payload: AnyPayload) {
+        if ("editOriginalMessage" in interaction) {
+            return (interaction as any).editOriginalMessage(payload);
+        }
+        return (interaction as any).createMessage(payload);
     }
 
-    private static container(options: {
+    private static buildComponents(options: {
         title?: string;
         description?: string;
         fields?: { value: string }[];
-    }) {
-        const components: any[] = [];
+    }): any[] {
+        const inner: any[] = [];
 
         if (options.title) {
-            components.push({
+            inner.push({
                 type: Constants.ComponentTypes.TEXT_DISPLAY,
-                content: "## "+options.title,
+                content: `## ${options.title}`,
             });
         }
 
         if (options.description) {
-            components.push({
+            inner.push({
                 type: Constants.ComponentTypes.TEXT_DISPLAY,
                 content: options.description,
             });
         }
 
-        if (options.fields?.length) {
-            for (const field of options.fields) {
-                components.push(
-                    {
-                        type: Constants.ComponentTypes.TEXT_DISPLAY,
-                        content: `${field.value}`,
-                    },
-                );
-            }
+        for (const field of options.fields ?? []) {
+            inner.push({
+                type: Constants.ComponentTypes.TEXT_DISPLAY,
+                content: field.value,
+            });
         }
 
-        return [
-            {
-                type: Constants.ComponentTypes.CONTAINER,
-                components,
-            },
-        ];
+        return [{ type: Constants.ComponentTypes.CONTAINER, components: inner }];
     }
 
     private static send(
@@ -71,73 +60,92 @@ export class MessageHandler {
             title?: string;
             description?: string;
             fields?: { value: string }[];
-            forceEphemeral?: boolean;
+            ephemeral?: boolean;
         }
     ) {
+        const flags =
+            Constants.MessageFlags.IS_COMPONENTS_V2 |
+            (options.ephemeral ? Constants.MessageFlags.EPHEMERAL : 0);
+
         return this.respond(interaction, {
-            components: this.container({
-                title: options.title,
-                description: options.description,
-                fields: options.fields,
-            }),
-            flags:
-                Constants.MessageFlags.IS_COMPONENTS_V2 |
-                (options.forceEphemeral
-                    ? Constants.MessageFlags.EPHEMERAL
-                    : 0),
+            components: this.buildComponents(options),
+            flags,
         });
     }
 
     static error(
         interaction: AnyInteractionGateway,
         error: unknown,
-        context?: string
+        context?: string,
+        ephemeral = false
     ) {
         return this.send(interaction, {
             title: "<:cross:1467501434210877593> Something broke",
             fields: [
-                {
-                    value: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\``,
-                },
+                { value: `\`\`\`${error instanceof Error ? error.message : String(error)}\`\`\`` },
                 ...(context ? [{ value: context }] : []),
             ],
+            ephemeral,
         });
     }
 
     static info(
         interaction: AnyInteractionGateway,
         title: string,
-        description?: string
+        description?: string,
+        ephemeral = false
     ) {
         return this.send(interaction, {
             title: `<:info:1467501339729727662> ${title}`,
             description,
+            ephemeral,
         });
     }
 
     static success(
         interaction: AnyInteractionGateway,
-        description: string
+        description: string,
+        ephemeral = false
     ) {
         return this.send(interaction, {
             title: "<:check:1435737072085237930> Done!",
             description,
+            ephemeral,
         });
     }
 
     static warning(
         interaction: AnyInteractionGateway,
-        description: string
+        description: string,
+        ephemeral = false
     ) {
         return this.send(interaction, {
             title: "<:alert:1467501544294322405> Heads up",
             description,
+            ephemeral,
+        });
+    }
+
+    /**
+     * Tell the user they're on cooldown.
+     * @param interaction
+     * @param remainingMs Time left on the cooldown in milliseconds.
+     */
+    static cooldown(
+        interaction: AnyInteractionGateway,
+        remainingMs: number
+    ) {
+        const secs = (remainingMs / 1000).toFixed(1);
+        return this.send(interaction, {
+            title: "<:alert:1467501544294322405> Slow down!",
+            description: `You can use this command again in **${secs}s**.`,
+            ephemeral: true,
         });
     }
 
     static raw(
         interaction: AnyInteractionGateway,
-        payload: Partial<InteractionContent | InteractionContentEdit>
+        payload: AnyPayload
     ) {
         return this.respond(interaction, {
             ...payload,
@@ -147,7 +155,7 @@ export class MessageHandler {
 
     static rawUnsafe(
         interaction: AnyInteractionGateway,
-        payload: Partial<InteractionContent | InteractionContentEdit>
+        payload: AnyPayload
     ) {
         return this.respond(interaction, payload as any);
     }

@@ -5,45 +5,44 @@
 //    /_/ |_|\____/_/|_|\__, /
 //                     /____/
 
+// lmfao don't even look at this,
+// this is just... bad
+
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
 import { spawn } from "node:child_process";
 import { MessageHandler } from "../../sys/messageHandler.js";
+import { teardownPresence } from "../../sys/presence.js";
 import app from "../../sys/appHandler.js";
 
 export default {
     name: "reboot",
-    description: "Reboot the VPS for updates",
+    description: "Reboot the VPS",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
 
-    visibility: "public",
-    hidden: false,
+    visibility: "ephemeral",
     ownerOnly: true,
+    hidden: true,
 
     async function(interaction: CommandInteraction) {
         await MessageHandler.warning(
             interaction,
-            "Rebooting the VPS now. Roxy will go offline for a bit."
+            "Rebooting the VPS now. Roxy will go offline briefly."
         );
+
+        teardownPresence();
+        app.disconnect({reconnect: false});
 
         setTimeout(() => {
             try {
-                const child = spawn(
-                    "sudo",
-                    ["/sbin/shutdown", "-r", "now"],
-                    {
-                        detached: true,
-                        stdio: "ignore",
-                    }
-                );
-
-                child.unref();
+                spawn("sudo", ["/sbin/shutdown", "-r", "now"], {
+                    detached: true,
+                    stdio: "ignore",
+                }).unref();
             } catch (err) {
-                console.error("Failed to reboot VPS:", err);
+                console.error("[reboot] Failed to invoke shutdown:", err);
             }
 
             process.exit(0);
-        }, 1500);
-
-        app.disconnect({ reconnect: false });
+        }, 1_000);
     },
 };

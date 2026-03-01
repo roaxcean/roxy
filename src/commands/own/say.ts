@@ -10,73 +10,74 @@ import { MessageHandler } from "../../sys/messageHandler.js";
 
 export default {
     name: "say",
-    description: "Make roxy say something...",
+    description: "Send a Components V2 message in the current",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
-    guildOnly: false,
-    visibility: "public",
 
-    hidden: false,
+    visibility: "public",
     ownerOnly: true,
+    hidden: true,
 
     options: [
         {
-            name: "message",
-            description: "What should Roxy say??",
+            name: "components",
+            description: 'Components V2 JSON — an array of top-level component objects, e.g. [{"type":17,...}]',
             type: Constants.ApplicationCommandOptionTypes.STRING,
             required: true,
         },
-        {
-            name: "plain",
-            description: "Wrap it in a pretty embed??????",
-            type: Constants.ApplicationCommandOptionTypes.BOOLEAN,
-            required: false,
-        }
     ],
 
-    function: async (int: CommandInteraction) => {
-        const text = int.data.options?.find(opt => opt.name === "message")?.value;
-        const plainText = int.data.options?.find(opt => opt.name === "plain")?.value;
+    async function(interaction: CommandInteraction) {
+        const raw = interaction.data.options as any[] | undefined;
+        const opts: any[] =
+            raw?.[0]?.options ??
+            raw ??
+            [];
 
-        if (!text) {
-            await MessageHandler.rawUnsafe(int, {
-                components: [
-                    {
-                        type: Constants.ComponentTypes.CONTAINER,
-                        components: [
-                            {
-                                type: Constants.ComponentTypes.TEXT_DISPLAY,
-                                content: "### <:forbid:1426995052181192867> You need to specify the `message` option!"
-                            }
-                        ]
-                    }
-                ],
-                flags: Constants.MessageFlags.IS_COMPONENTS_V2 | Constants.MessageFlags.EPHEMERAL
-            });
+        const componentsRaw = opts.find(o => o.name === "components")?.value as string | undefined;
+
+        if (!componentsRaw) {
+            await MessageHandler.warning(interaction, "Missing `components` option.", true);
             return;
         }
 
-        let payload
-        if (plainText) {
-            payload = {
-                content: (text || "meow!") as string,
+        let components: any[];
+        try {
+            const parsed = JSON.parse(componentsRaw);
+            if (!Array.isArray(parsed)) {
+                await MessageHandler.error(
+                    interaction,
+                    "JSON must be a top-level array of component objects.",
+                    undefined,
+                    true
+                );
+                return;
             }
-        } else {
-            payload = {
-                components: [
-                    {
-                        type: Constants.ComponentTypes.CONTAINER,
-                        components: [
-                            {
-                                type: Constants.ComponentTypes.TEXT_DISPLAY,
-                                content: (text || "meow!") as string,
-                            }
-                        ]
-                    }
-                ],
-                flags: Constants.MessageFlags.IS_COMPONENTS_V2,
-            }
+            components = parsed;
+        } catch (err) {
+            const msg = err instanceof SyntaxError ? err.message : String(err);
+            await MessageHandler.error(
+                interaction,
+                `JSON parse failed: ${msg}`,
+                "Check your JSON syntax and try again.",
+                true
+            );
+            return;
         }
 
-        await MessageHandler.rawUnsafe(int, payload)
+        const payload = {
+            components,
+            flags: Constants.MessageFlags.IS_COMPONENTS_V2,
+        };
+
+        try {
+            return await MessageHandler.rawUnsafe(interaction, payload);
+        } catch (err: any) {
+            await MessageHandler.error(
+                interaction,
+                err?.message ?? String(err),
+                `Failed to send message.`,
+                true
+            );
+        }
     },
 };

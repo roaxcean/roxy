@@ -16,18 +16,18 @@ async function fetchTXT(url: string, errorMessage: string): Promise<string> {
 
 export default {
     name: "api",
-    description: "A scoop of the VoltRadio.lol API",
+    description: "A scoop of the VoltRadio.me API",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
     visibility: "public",
 
-    category: "VoltRadio",
+    category: "<:volt:1426666376197701683> VoltRadio",
 
     function: async (int: CommandInteraction) => {
         let data
         try {
             data = await fetchTXT(
-                "https://manage.voltradio.lol/api/nowplaying/voltradio",
+                "https://admin.voltradio.me/api/nowplaying/voltradio",
                 "Couldn't fetch VoltRadio data."
             )
         } catch (e: any | Error) {

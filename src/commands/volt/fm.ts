@@ -17,27 +17,25 @@ async function fetchJSON<T>(url: string, errorMessage: string): Promise<T> {
 
 export default {
     name: "fm",
-    description: "What's cooking at VoltRadio.lol",
+    description: "What's cooking at VoltRadio.me",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
     visibility: "public",
 
-    category: "VoltRadio",
+    category: "<:volt:1426666376197701683> VoltRadio",
 
     function: async (int: CommandInteraction) => {
         let data: StationResponse
 
         try {
             data = await fetchJSON<StationResponse>(
-                "https://manage.voltradio.lol/api/nowplaying/voltradio",
+                "https://admin.voltradio.me/api/nowplaying/voltradio",
                 "Couldn't fetch VoltRadio data."
             );
         } catch (e: any | Error) {
             MessageHandler.error(int, e);
             return;
         }
-
-        console.log(data);
 
         const thumbnail = `https://api.synkradio.co.uk/spotify/cover?format=webp&width=576&height=576&artist=${
             data.now_playing.song.artist.split(";")[0].replaceAll(" ", "%20")
@@ -77,7 +75,7 @@ export default {
                         ],
                         accessory: {
                             type: Constants.ComponentTypes.THUMBNAIL,
-                            media: { url: thumbnail || "https://voltradio.lol/icon-192.webp" },
+                            media: { url: thumbnail || "https://voltradio.me/voltradio-icon.png" },
                         },
                     },
 
@@ -102,8 +100,8 @@ export default {
                                 type: Constants.ComponentTypes.BUTTON,
                                 style: Constants.ButtonStyles.LINK,
                                 emoji: { name: "link", id: "1426855509780332555" },
-                                url: "https://voltradio.lol/",
-                                label: "voltradio.lol",
+                                url: "https://voltradio.me/",
+                                label: "voltradio.me",
                             },
                             {
                                 type: Constants.ComponentTypes.BUTTON,
