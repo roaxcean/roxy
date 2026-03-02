@@ -16,7 +16,7 @@ import app from "../../sys/appHandler.js";
 
 export default {
     name: "reboot",
-    description: "Reboot the VPS",
+    description: "Reboot Roxy",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
 
     visibility: "ephemeral",
@@ -26,23 +26,14 @@ export default {
     async function(interaction: CommandInteraction) {
         await MessageHandler.warning(
             interaction,
-            "Rebooting the VPS now. Roxy will go offline briefly."
+            "Rebooting now. Roxy will go offline briefly."
         );
 
         teardownPresence();
         app.disconnect({reconnect: false});
 
         setTimeout(() => {
-            try {
-                spawn("sudo", ["/sbin/shutdown", "-r", "now"], {
-                    detached: true,
-                    stdio: "ignore",
-                }).unref();
-            } catch (err) {
-                console.error("[reboot] Failed to invoke shutdown:", err);
-            }
-
-            process.exit(0);
+            process.exit(0); // docker will auto-restart the container
         }, 1_000);
     },
 };
