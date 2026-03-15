@@ -4,4 +4,6 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
+      - .:/app
       - ./data:/app/data
+      - ~/.ssh:/root/.ssh:ro
