@@ -13,7 +13,7 @@ export default {
     description: "Flip a coin",
 
     async function(interaction: CommandInteraction) {
-        const result = Math.random() < 0.5 ? "Heads" : "Tails";
+        const result = Math.random() < 0.5 ? "heads" : "tails";
         await MessageHandler.raw(interaction, {
             components: [
                 {

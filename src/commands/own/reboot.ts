@@ -9,7 +9,6 @@
 // this is just... bad
 
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
-import { spawn } from "node:child_process";
 import { MessageHandler } from "../../sys/messageHandler.js";
 import { teardownPresence } from "../../sys/presence.js";
 import app from "../../sys/appHandler.js";
