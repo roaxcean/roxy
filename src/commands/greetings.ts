@@ -142,6 +142,28 @@ async function handleSet(
         return;
     }
 
+    try {
+        const parsed = JSON.parse(message);
+        if (!Array.isArray(parsed)) {
+            await MessageHandler.error(
+                interaction,
+                "JSON must be a top-level array of component objects.",
+                undefined,
+                true
+            );
+            return;
+        }
+    } catch (err) {
+        const msg = err instanceof SyntaxError ? err.message : String(err);
+        await MessageHandler.error(
+            interaction,
+            `JSON parse failed: ${msg}`,
+            "Check your JSON syntax and try again.",
+            true
+        );
+        return;
+    }
+
     const entry: EventConfig = { channelId, message };
 
     if (eventType === "boost") {
@@ -214,7 +236,7 @@ const CHANNEL_OPTION = {
 
 const MESSAGE_OPTION = {
     name: "message",
-    description: "Message text — use {user} {tag} {server} {count} {boosters} {tier} {userid}",
+    description: "Components V2 JSON — use {user} {tag} {server} {count} {boosters} {tier} {userid}",
     type: Constants.ApplicationCommandOptionTypes.STRING,
     required: true,
 };

@@ -33,11 +33,9 @@
  *   {tier}      — boost tier (0–3)
  */
 
-import { Client, Constants } from "@projectdysnomia/dysnomia";
+import {Client, Constants, Guild, Member, OldMember} from "@projectdysnomia/dysnomia";
 import { consola } from "consola";
 import { getSetting } from "./settingsStore.js";
-
-// ── Types ────────────────────────────────────────────────────────────────────
 
 export interface EventConfig {
     channelId: string;
@@ -55,8 +53,6 @@ export interface GuildEventConfig {
 export type GuildEventsStore = Record<string, GuildEventConfig>;
 
 const SETTINGS_KEY = "guildEvents";
-
-// ── Placeholder resolution ───────────────────────────────────────────────────
 
 interface PlaceholderContext {
     userId:       string;
@@ -78,27 +74,27 @@ function resolvePlaceholders(template: string, ctx: PlaceholderContext): string 
         .replaceAll("{tier}",     String(ctx.boostTier));
 }
 
-// ── Message sending ──────────────────────────────────────────────────────────
-
 async function sendEventMessage(
     client: Client,
     channelId: string,
     content: string,
-    iconEmoji: string,
 ): Promise<void> {
     try {
+        let components: any[];
+        try {
+            const parsed = JSON.parse(content);
+            if (!Array.isArray(parsed)) {
+                consola.error(`[guildEvents] JSON must be a top-level array of component objects.`);
+            }
+            components = parsed;
+        } catch (err) {
+            const msg = err instanceof SyntaxError ? err.message : String(err);
+            consola.error(`[guildEvents] JSON parse failed: ${msg}`);
+            return;
+        }
+
         await client.createMessage(channelId, {
-            components: [
-                {
-                    type: Constants.ComponentTypes.CONTAINER,
-                    components: [
-                        {
-                            type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: `${iconEmoji} ${content}`,
-                        },
-                    ],
-                },
-            ],
+            components: components,
             flags: Constants.MessageFlags.IS_COMPONENTS_V2,
         });
     } catch (err) {
@@ -106,16 +102,12 @@ async function sendEventMessage(
     }
 }
 
-// ── Config loader ─────────────────────────────────────────────────────────────
-
 async function loadConfig(): Promise<GuildEventsStore> {
     return (await getSetting<GuildEventsStore>(SETTINGS_KEY)) ?? {};
 }
 
-// ── Event handlers ────────────────────────────────────────────────────────────
-
-async function onMemberAdd(client: Client, member: any): Promise<void> {
-    const guildId = member.guildID ?? member.guild?.id;
+async function onMemberAdd(client: Client, member: Member): Promise<void> {
+    const guildId = member.guild?.id;
     if (!guildId) return;
 
     const store = await loadConfig();
@@ -132,13 +124,15 @@ async function onMemberAdd(client: Client, member: any): Promise<void> {
         boosterCount: guild?.premiumSubscriptionCount ?? 0,
         boostTier:    guild?.premiumTier ?? 0,
     };
+    console.log("[guildEvents][onMemberAdd] ctx:", ctx);
 
     const content = resolvePlaceholders(cfg.message, ctx);
-    await sendEventMessage(client, cfg.channelId, content, "<:arrowr:1426686528276529313>");
+    console.log("[guildEvents][onMemberAdd] content:", content);
+    await sendEventMessage(client, cfg.channelId, content);
 }
 
-async function onMemberRemove(client: Client, member: any, guild: any): Promise<void> {
-    const guildId = guild?.id ?? member.guildID ?? member.guild?.id;
+async function onMemberRemove(client: Client, member: Member, guild: Guild): Promise<void> {
+    const guildId = guild?.id ?? member.guild?.id;
     if (!guildId) return;
 
     const store = await loadConfig();
@@ -157,11 +151,11 @@ async function onMemberRemove(client: Client, member: any, guild: any): Promise<
     };
 
     const content = resolvePlaceholders(cfg.message, ctx);
-    await sendEventMessage(client, cfg.channelId, content, "<:cross:1467501434210877593>");
+    await sendEventMessage(client, cfg.channelId, content);
 }
 
-async function onMemberUpdate(client: Client, member: any, oldMember: any): Promise<void> {
-    const guildId = member.guildID ?? member.guild?.id;
+async function onMemberUpdate(client: Client, member: Member, oldMember: OldMember | null): Promise<void> {
+    const guildId = member.guild?.id;
     if (!guildId) return;
 
     const store = await loadConfig();
@@ -194,29 +188,27 @@ async function onMemberUpdate(client: Client, member: any, oldMember: any): Prom
     };
 
     const content = resolvePlaceholders(cfg.message, ctx);
-    await sendEventMessage(client, cfg.channelId, content, "<:sparkles:1477364207593852999>");
+    await sendEventMessage(client, cfg.channelId, content);
 }
-
-// ── Setup ─────────────────────────────────────────────────────────────────────
 
 /**
  * Call once from service.ts after the client is ready.
  * Registers the three guild member events on the provided client instance.
  */
 export function setupGuildEvents(client: Client): void {
-    client.on("guildMemberAdd", (member) => {
+    client.on("guildMemberAdd", (_: Guild, member: Member) => {
         onMemberAdd(client, member).catch(err =>
             consola.warn("[guildEvents] guildMemberAdd error:", err)
         );
     });
 
-    client.on("guildMemberRemove", (member, guild) => {
+    client.on("guildMemberRemove", (guild: Guild, member: Member) => {
         onMemberRemove(client, member, guild).catch(err =>
             consola.warn("[guildEvents] guildMemberRemove error:", err)
         );
     });
 
-    client.on("guildMemberUpdate", (member, oldMember) => {
+    client.on("guildMemberUpdate", (_: Guild, member: Member, oldMember: OldMember | null) => {
         onMemberUpdate(client, member, oldMember).catch(err =>
             consola.warn("[guildEvents] guildMemberUpdate error:", err)
         );
