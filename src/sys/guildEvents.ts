@@ -115,7 +115,7 @@ async function loadConfig(): Promise<GuildEventsStore> {
 // ── Event handlers ────────────────────────────────────────────────────────────
 
 async function onMemberAdd(client: Client, member: any): Promise<void> {
-    const guildId = member.guild?.id ?? member.guildID;
+    const guildId = member.guildID ?? member.guild?.id;
     if (!guildId) return;
 
     const store = await loadConfig();
@@ -137,24 +137,23 @@ async function onMemberAdd(client: Client, member: any): Promise<void> {
     await sendEventMessage(client, cfg.channelId, content, "<:arrowr:1426686528276529313>");
 }
 
-async function onMemberRemove(client: Client, member: any): Promise<void> {
-    const guildId = member.guild?.id ?? member.guildID;
+async function onMemberRemove(client: Client, member: any, guild: any): Promise<void> {
+    const guildId = guild?.id ?? member.guildID ?? member.guild?.id;
     if (!guildId) return;
 
     const store = await loadConfig();
     const cfg   = store[guildId]?.leave;
     if (!cfg) return;
 
-    const guild = client.guilds.get(guildId);
+    const resolvedGuild = client.guilds.get(guildId) ?? guild;
 
-    // memberCount has already decremented by the time this fires
     const ctx: PlaceholderContext = {
         userId:       member.id ?? member.user?.id,
         username:     member.user?.username ?? member.username ?? "unknown",
-        guildName:    guild?.name ?? "this server",
-        memberCount:  guild?.memberCount ?? 0,
-        boosterCount: guild?.premiumSubscriptionCount ?? 0,
-        boostTier:    guild?.premiumTier ?? 0,
+        guildName:    resolvedGuild?.name ?? "this server",
+        memberCount:  resolvedGuild?.memberCount ?? 0,
+        boosterCount: resolvedGuild?.premiumSubscriptionCount ?? 0,
+        boostTier:    resolvedGuild?.premiumTier ?? 0,
     };
 
     const content = resolvePlaceholders(cfg.message, ctx);
@@ -162,20 +161,22 @@ async function onMemberRemove(client: Client, member: any): Promise<void> {
 }
 
 async function onMemberUpdate(client: Client, member: any, oldMember: any): Promise<void> {
-    const guildId = member.guild?.id ?? member.guildID;
+    const guildId = member.guildID ?? member.guild?.id;
     if (!guildId) return;
 
     const store = await loadConfig();
     const cfg   = store[guildId]?.boost;
     if (!cfg) return;
 
-    // Primary detection: premium_since just appeared (was null/undefined before)
-    const justBoostedViaPremium =
-        !oldMember?.premiumSince && !!member.premiumSince;
+    const oldPremium = oldMember && Object.keys(oldMember).length > 0
+        ? oldMember.premiumSince
+        : member.premiumSince;
 
-    // Fallback detection: configured boost role was newly added
+    const justBoostedViaPremium = !oldPremium && !!member.premiumSince;
+
     const justBoostedViaRole =
         cfg.boostRoleId &&
+        oldMember && Object.keys(oldMember).length > 0 &&
         !(oldMember?.roles ?? []).includes(cfg.boostRoleId) &&
         (member.roles ?? []).includes(cfg.boostRoleId);
 
@@ -209,8 +210,8 @@ export function setupGuildEvents(client: Client): void {
         );
     });
 
-    client.on("guildMemberRemove", (member) => {
-        onMemberRemove(client, member).catch(err =>
+    client.on("guildMemberRemove", (member, guild) => {
+        onMemberRemove(client, member, guild).catch(err =>
             consola.warn("[guildEvents] guildMemberRemove error:", err)
         );
     });
