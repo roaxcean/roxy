@@ -19,6 +19,11 @@ type SettingsStore = Record<string, unknown>;
 
 let cache: SettingsStore | null = null;
 
+// serialise all writes so concurrent setSetting/deleteSetting calls never
+// clobber each other; each mutation appends to this chain; reads are still
+// instant once the cache is warm
+let writeQueue: Promise<void> = Promise.resolve();
+
 async function read(): Promise<SettingsStore> {
     if (cache) return cache;
     try {
@@ -50,11 +55,14 @@ export async function getSetting<T>(key: string): Promise<T | null> {
 export async function setSetting<T>(key: string, value: T): Promise<void> {
     const store = await read();
     store[key] = value as unknown;
-    await write(store);
+    // chain onto the queue so concurrent writes are ordered, not racy
+    writeQueue = writeQueue.then(() => write(store));
+    await writeQueue;
 }
 
 export async function deleteSetting(key: string): Promise<void> {
     const store = await read();
     delete store[key];
-    await write(store);
+    writeQueue = writeQueue.then(() => write(store));
+    await writeQueue;
 }

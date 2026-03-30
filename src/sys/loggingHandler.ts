@@ -40,7 +40,8 @@ const REQUIRED_PERMS = SEND_MESSAGES | VIEW_CHANNEL | EMBED_LINKS;
  */
 async function canSendTo(channelId: string): Promise<boolean> {
     try {
-        const channel = app.getChannel(channelId) ?? await app.getChannel(channelId);
+        // getChannel is synchronous (cache only), fall back to REST if missing
+        const channel = app.getChannel(channelId) ?? await app.getRESTChannel(channelId);
         if (!channel) return false;
 
         // only text-capable channel types: 0 = GUILD_TEXT, 5 = ANNOUNCEMENT

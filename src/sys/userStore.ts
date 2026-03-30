@@ -19,6 +19,10 @@ type UserStore = Record<string, Record<string, unknown>>;
 
 let cache: UserStore | null = null;
 
+// serialise all writes so concurrent setUserValue calls never clobber each
+// other; mirrors the same pattern used in settingsStore
+let writeQueue: Promise<void> = Promise.resolve();
+
 async function read(): Promise<UserStore> {
     if (cache) return cache;
     try {
@@ -51,5 +55,6 @@ export async function setUserValue<T>(userId: string, key: string, value: T): Pr
     const store = await read();
     if (!store[userId]) store[userId] = {};
     store[userId][key] = value as unknown;
-    await write(store);
+    writeQueue = writeQueue.then(() => write(store));
+    await writeQueue;
 }

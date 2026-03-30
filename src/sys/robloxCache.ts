@@ -23,6 +23,8 @@
  *   if (!cached) { ... tell user to re-run the command ... }
  */
 
+import { RobloxUser } from "../commands/roblox/_api.js";
+
 const TTL_MS   = 5 * 60 * 1_000; // 5 minutes - plenty for a pagination session
 const SWEEP_MS = 2 * 60 * 1_000; // sweep for stale entries every 2 minutes
 
@@ -71,9 +73,9 @@ class RobloxCache {
 export const robloxCache = new RobloxCache();
 
 export interface FriendsCacheEntry {
-    user:       { id: number; name: string };
-    resolved:   any[];   // sorted resolved user objects
-    friendIds:  number[];
+    user:      { id: number; name: string };
+    resolved:  RobloxUser[]; // no longer any[], whoops
+    friendIds: number[];
 }
 
 export interface GroupsCacheEntry {

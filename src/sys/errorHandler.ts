@@ -71,9 +71,6 @@ export function formatError(err: unknown): string {
  *
  * @param err     - The error to handle.
  * @param guildId - Guild context, if known (used to pick the right ping target).
- *
- * Returns `true`  → caller should exit the process.
- * Returns `false` → recoverable, continue running.
  */
 async function handleError(err: unknown, guildId?: string): Promise<boolean> {
     if (isIgnored(err)) return false;
@@ -89,49 +86,47 @@ async function handleError(err: unknown, guildId?: string): Promise<boolean> {
             "| 3. Click 'Bot' in the sidebar\n" +
             "+ 4. Turn on all intents"
         );
-        return true;
+        return true; // exit
     }
 
+    // ── Noisy but recoverable: Discord form validation errors ──
     if (e?.message?.startsWith("Invalid Form Body")) {
         consola.warn(`[form] ${e.message}`);
         return false;
     }
 
+    // ── Everything else: log, ping, keep running ──
     const formatted = formatError(err);
     consola.error(formatted);
 
-    // buildPingLine reads from settingsStore — await it
     const pingLine = await buildPingLine(guildId);
 
-    await log(
-        {
-            components: [
-                {
-                    type: Constants.ComponentTypes.CONTAINER,
-                    components: [
-                        {
-                            type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: "### <:settings:1426875133385244703> Process errored!",
-                        },
-                        {
-                            type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: `\`\`\`\n${formatted}\n\`\`\``,
-                        },
-                        {
-                            type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: pingLine,
-                        },
-                    ],
-                },
-                {
-                    type: Constants.ComponentTypes.SEPARATOR,
-                },
-            ],
-        }
-    );
+    await log({
+        components: [
+            {
+                type: Constants.ComponentTypes.CONTAINER,
+                components: [
+                    {
+                        type: Constants.ComponentTypes.TEXT_DISPLAY,
+                        content: "### <:settings:1426875133385244703> Process errored!",
+                    },
+                    {
+                        type: Constants.ComponentTypes.TEXT_DISPLAY,
+                        content: `\`\`\`\n${formatted}\n\`\`\``,
+                    },
+                    {
+                        type: Constants.ComponentTypes.TEXT_DISPLAY,
+                        content: pingLine,
+                    },
+                ],
+            },
+            {
+                type: Constants.ComponentTypes.SEPARATOR,
+            },
+        ],
+    });
 
-    consola.error("Cannot continue. Reboot required.");
-    return true;
+    return false;
 }
 
 export default handleError;

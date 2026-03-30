@@ -29,7 +29,7 @@ import {
     recordCooldown,
     buildRegistrationPayload,
 } from "./commandRegistry.js";
-import {Command} from "./types.js";
+import { Command } from "./types.js";
 
 config({ override: true, quiet: true });
 
@@ -143,36 +143,52 @@ async function handleComponent(interaction: ComponentInteraction): Promise<void>
         candidates.push(parts.slice(0, i).join("_") + "_");
     }
 
-    let resolvedPath: string | null = null;
+    let handler: unknown;
     for (const candidate of candidates) {
         const p = path.resolve(__dirname, "..", "components", `${candidate}.js`);
         try {
-            await import(pathToFileURL(p).href);
-            resolvedPath = p;
+            const mod = await import(pathToFileURL(p).href);
+            handler = mod.default ?? mod;
             break;
         } catch {
-            // not found
+            // file not found
         }
     }
 
-    if (!resolvedPath) {
+    if (!handler) {
         consola.warn(`[service] No component handler found for "${id}"`);
         return;
     }
 
+    if (typeof handler !== "function") {
+        consola.error(`[service] Component handler for "${id}" is not a function`);
+        return;
+    }
+
     try {
-        const mod = await import(pathToFileURL(resolvedPath).href);
-        const handler = mod.default ?? mod;
-
-        if (typeof handler !== "function") {
-            throw new Error(`Component handler for "${id}" is not a function`);
-        }
-
         await handler(interaction);
     } catch (err: any) {
         consola.error(`[service] Component "${id}" threw:`, err);
         await MessageHandler.error(interaction, err, `Component: ${id}`);
     }
+}
+
+function connectWithTimeout(timeoutMs: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error(
+                `Connection timed out after ${timeoutMs / 1000}s — Discord gateway did not respond.`
+            ));
+        }, timeoutMs);
+
+        app.connect().then(() => {
+            clearTimeout(timer);
+            resolve();
+        }).catch((err) => {
+            clearTimeout(timer);
+            reject(err);
+        });
+    });
 }
 
 export default async function start(): Promise<void> {
@@ -195,7 +211,7 @@ export default async function start(): Promise<void> {
                         },
                         {
                             type: Constants.ComponentTypes.TEXT_DISPLAY,
-                            content: await buildPingLine(), // global ping target (no guildId)
+                            content: await buildPingLine(),
                         },
                     ],
                 },
@@ -220,7 +236,12 @@ export default async function start(): Promise<void> {
         process.exit(0);
     });
 
-    await app.connect();
+    try {
+        await connectWithTimeout(30_000);
+    } catch (err) {
+        consola.error("[service] Failed to connect to Discord:", err);
+        process.exit(1);
+    }
 }
 
 export { reloadCommands };

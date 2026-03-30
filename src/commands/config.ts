@@ -23,26 +23,18 @@
 
 import { CommandInteraction, Constants } from "@projectdysnomia/dysnomia";
 import { MessageHandler } from "../sys/messageHandler.js";
-import { getSetting, setSetting } from "../sys/settingsStore.js";
-import { AppConfig } from "../sys/appConfig.js";
+import { setSetting } from "../sys/settingsStore.js";
+import { getAppConfig, AppConfig } from "../sys/appConfig.js";
 
+// appConfig.ts owns the key and shape, reference it from there, not here
 const SETTINGS_KEY = "appConfig";
-
-async function loadConfig(): Promise<AppConfig> {
-    const stored = await getSetting<Partial<AppConfig>>(SETTINGS_KEY);
-    return {
-        staff:       { userIds: stored?.staff?.userIds ?? [], roleIds: stored?.staff?.roleIds ?? [] },
-        logChannels: stored?.logChannels ?? [],
-        pingTargets: stored?.pingTargets ?? [],
-    };
-}
 
 async function saveConfig(cfg: AppConfig): Promise<void> {
     await setSetting(SETTINGS_KEY, cfg);
 }
 
 async function handleView(interaction: CommandInteraction): Promise<void> {
-    const cfg = await loadConfig();
+    const cfg = await getAppConfig();
 
     const staffUsers = cfg.staff.userIds.length
         ? cfg.staff.userIds.map(id => `<@${id}>`).join(", ")
@@ -100,7 +92,7 @@ async function handleStaffAdd(interaction: CommandInteraction): Promise<void> {
         return;
     }
 
-    const cfg = await loadConfig();
+    const cfg = await getAppConfig();
     const added: string[] = [];
 
     if (userId && !cfg.staff.userIds.includes(userId)) {
@@ -131,7 +123,7 @@ async function handleStaffRemove(interaction: CommandInteraction): Promise<void>
         return;
     }
 
-    const cfg = await loadConfig();
+    const cfg = await getAppConfig();
     const removed: string[] = [];
 
     if (userId) {
@@ -168,7 +160,7 @@ async function handleLogAdd(interaction: CommandInteraction): Promise<void> {
         return;
     }
 
-    const cfg = await loadConfig();
+    const cfg = await getAppConfig();
     const already = cfg.logChannels.find(c => c.channelId === channelId);
     if (already) {
         await MessageHandler.info(interaction, "Already added", `<#${channelId}> is already a log channel.`);
@@ -189,7 +181,7 @@ async function handleLogRemove(interaction: CommandInteraction): Promise<void> {
         return;
     }
 
-    const cfg = await loadConfig();
+    const cfg = await getAppConfig();
     const idx = cfg.logChannels.findIndex(c => c.channelId === channelId);
     if (idx === -1) {
         await MessageHandler.info(interaction, "Not found", `<#${channelId}> is not a log channel.`);
@@ -204,12 +196,10 @@ async function handleLogRemove(interaction: CommandInteraction): Promise<void> {
 async function handlePingSet(interaction: CommandInteraction): Promise<void> {
     const opts = resolveOpts(interaction);
 
-    // guild_id: explicit string, or current guild, or omitted for global
     const guildIdRaw = opts.find((o: any) => o.name === "guild_id")?.value as string | undefined;
     const guildId    = guildIdRaw === "global" ? undefined
         : guildIdRaw ?? interaction.guild?.id;
 
-    // roles and users as comma/space-separated IDs, plus convenience pickers
     const roleRaw  = opts.find((o: any) => o.name === "role")?.value  as string | undefined;
     const userRaw  = opts.find((o: any) => o.name === "user")?.value  as string | undefined;
     const rolesRaw = opts.find((o: any) => o.name === "role_ids")?.value as string | undefined;
@@ -229,7 +219,7 @@ async function handlePingSet(interaction: CommandInteraction): Promise<void> {
         return;
     }
 
-    const cfg = await loadConfig();
+    const cfg = await getAppConfig();
     const existing = cfg.pingTargets.findIndex(p =>
         guildId ? p.guildId === guildId : !p.guildId
     );
@@ -257,7 +247,7 @@ async function handlePingRemove(interaction: CommandInteraction): Promise<void> 
     const guildId    = guildIdRaw === "global" ? undefined
         : guildIdRaw ?? interaction.guild?.id;
 
-    const cfg = await loadConfig();
+    const cfg = await getAppConfig();
     const idx = cfg.pingTargets.findIndex(p =>
         guildId ? p.guildId === guildId : !p.guildId
     );
@@ -281,13 +271,13 @@ function resolveOpts(interaction: CommandInteraction): any[] {
 }
 
 const handlers: Record<string, (i: CommandInteraction) => Promise<void>> = {
-    view:          handleView,
-    "staff-add":   handleStaffAdd,
+    view:           handleView,
+    "staff-add":    handleStaffAdd,
     "staff-remove": handleStaffRemove,
-    "log-add":     handleLogAdd,
-    "log-remove":  handleLogRemove,
-    "ping-set":    handlePingSet,
-    "ping-remove": handlePingRemove,
+    "log-add":      handleLogAdd,
+    "log-remove":   handleLogRemove,
+    "ping-set":     handlePingSet,
+    "ping-remove":  handlePingRemove,
 };
 
 export default {
@@ -329,7 +319,7 @@ export default {
             name: "log-add",
             description: "Add a log channel",
             options: [
-                { name: "channel",  description: "Channel to log to",           type: Constants.ApplicationCommandOptionTypes.CHANNEL, required: true  },
+                { name: "channel",  description: "Channel to log to",              type: Constants.ApplicationCommandOptionTypes.CHANNEL, required: true  },
                 { name: "guild_id", description: "Guild ID (defaults to current)", type: Constants.ApplicationCommandOptionTypes.STRING,  required: false },
             ],
         },
@@ -361,7 +351,7 @@ export default {
             name: "ping-remove",
             description: 'Clear ping targets for a guild or "global"',
             options: [
-                { name: "guild_id", description: 'Guild ID, or "global"',       type: Constants.ApplicationCommandOptionTypes.STRING,  required: false },
+                { name: "guild_id", description: 'Guild ID, or "global"', type: Constants.ApplicationCommandOptionTypes.STRING, required: false },
             ],
         },
     ],
