@@ -30,6 +30,7 @@ import {
     buildRegistrationPayload,
 } from "./commandRegistry.js";
 import { Command } from "./types.js";
+import { setupGuildEvents } from "./guildEvents.js";
 
 config({ override: true, quiet: true });
 
@@ -199,6 +200,7 @@ export default async function start(): Promise<void> {
 
         await registerCommands();
         await setupPresence(app);
+        setupGuildEvents(app);
 
         await log({
             components: [
