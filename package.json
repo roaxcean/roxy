@@ -1,7 +1,7 @@
 {
   "name": "roxy",
-  "version": "1.1.1",
-  "description": "",
+  "version": "1.1.2",
+  "description": "Rarely Obeys, eXtremely Yappy — a DIY implementation of a Discord App in TypeScript, using Dysnomia. Dynamic, reusable, and open-source!",
   "main": "src/index.js",
   "scripts": {
     "build": "tsc",

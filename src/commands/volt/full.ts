@@ -17,7 +17,7 @@ async function fetchJSON<T>(url: string, errMsg: string): Promise<T> {
 
 export default {
     name: "full",
-    description: "What's cooking at VoltRadio.me (more)",
+    description: "What's cooking at voltradio.org (more)",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
     visibility: "public",
@@ -29,7 +29,7 @@ export default {
 
         try {
             data = await fetchJSON<StationResponse>(
-                "https://admin.voltradio.me/api/nowplaying/voltradio",
+                "https://admin.voltradio.org/api/nowplaying/voltradio",
                 "Couldn't fetch VoltRadio data."
             );
         } catch (e: any | Error) {
@@ -78,7 +78,7 @@ export default {
                         accessory: {
                             type: Constants.ComponentTypes.THUMBNAIL,
                             media: {
-                                url: thumbnail || "https://voltradio.me/voltradio-icon.png",
+                                url: thumbnail || "https://voltradio.org/voltradio-icon.png",
                             }
                         },
                     },
@@ -147,7 +147,7 @@ By ${data.playing_next.song.artist}`,
                         accessory: {
                             type: Constants.ComponentTypes.THUMBNAIL,
                             media: {
-                                url: nexthumbnail || "https://voltradio.me/voltradio-icon.png",
+                                url: nexthumbnail || "https://voltradio.org/voltradio-icon.png",
                             }
                         }
                     }
@@ -173,8 +173,8 @@ By ${data.playing_next.song.artist}`,
                             type: Constants.ComponentTypes.BUTTON,
                             style: Constants.ButtonStyles.LINK,
                             emoji: { name: "link", id: "1426855509780332555" },
-                            url: "https://voltradio.me/",
-                            label: "voltradio.me",
+                            url: "https://voltradio.org/",
+                            label: "voltradio.org",
                         },
                         {
                             type: Constants.ComponentTypes.BUTTON,

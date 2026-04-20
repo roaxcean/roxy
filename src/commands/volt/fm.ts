@@ -17,7 +17,7 @@ async function fetchJSON<T>(url: string, errorMessage: string): Promise<T> {
 
 export default {
     name: "fm",
-    description: "What's cooking at VoltRadio.me",
+    description: "What's cooking at voltradio.org",
     type: Constants.ApplicationCommandTypes.CHAT_INPUT,
     guildOnly: false,
     visibility: "public",
@@ -29,7 +29,7 @@ export default {
 
         try {
             data = await fetchJSON<StationResponse>(
-                "https://admin.voltradio.me/api/nowplaying/voltradio",
+                "https://admin.voltradio.org/api/nowplaying/voltradio",
                 "Couldn't fetch VoltRadio data."
             );
         } catch (e: any | Error) {
@@ -75,7 +75,7 @@ export default {
                         ],
                         accessory: {
                             type: Constants.ComponentTypes.THUMBNAIL,
-                            media: { url: thumbnail || "https://voltradio.me/voltradio-icon.png" },
+                            media: { url: thumbnail || "https://voltradio.org/voltradio-icon.png" },
                         },
                     },
 
@@ -100,8 +100,8 @@ export default {
                                 type: Constants.ComponentTypes.BUTTON,
                                 style: Constants.ButtonStyles.LINK,
                                 emoji: { name: "link", id: "1426855509780332555" },
-                                url: "https://voltradio.me/",
-                                label: "voltradio.me",
+                                url: "https://voltradio.org/",
+                                label: "voltradio.org",
                             },
                             {
                                 type: Constants.ComponentTypes.BUTTON,

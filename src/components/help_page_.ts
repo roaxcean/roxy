@@ -14,7 +14,7 @@ import { ComponentInteraction, Constants } from "@projectdysnomia/dysnomia";
 import { buildHelpPage } from "../commands/help.js";
 
 export default async function handleHelpPage(interaction: ComponentInteraction): Promise<void> {
-    const raw  = interaction.data.custom_id;           // e.g. "help_page_2"
+    const raw  = interaction.data.custom_id; // e.g. "help_page_2"
     const page = parseInt(raw.split("_").pop() ?? "0", 10);
     const safePageNum = isNaN(page) ? 0 : page;
 

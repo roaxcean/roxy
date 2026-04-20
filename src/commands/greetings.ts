@@ -36,8 +36,6 @@ import { GuildEventsStore, EventConfig } from "../sys/guildEvents.js";
 
 const SETTINGS_KEY = "guildEvents";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 async function loadStore(): Promise<GuildEventsStore> {
     return (await getSetting<GuildEventsStore>(SETTINGS_KEY)) ?? {};
 }
@@ -69,8 +67,6 @@ const PLACEHOLDER_DOCS = [
     "`{boosters}` — booster count",
     "`{tier}` — boost tier",
 ].join("  ·  ");
-
-// ── Subcommand handlers ───────────────────────────────────────────────────────
 
 async function handleView(interaction: CommandInteraction): Promise<void> {
     const opts    = resolveOpts(interaction);
@@ -217,8 +213,6 @@ async function handleRemove(
     await saveStore(store);
     await MessageHandler.success(interaction, `${eventType} announcement removed for \`${guildId}\`.`);
 }
-
-// ── Command definition ────────────────────────────────────────────────────────
 
 const GUILD_ID_OPTION = {
     name: "guild_id",

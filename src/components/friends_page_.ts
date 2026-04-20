@@ -6,8 +6,6 @@
 //                     /____/
 
 // custom_id format: "friends_page_{userId}_{page}"
-// Data is served from the in-memory cache written by the slash command.
-// If the cache has expired (5 min TTL) the user is told to re-run /friends.
 
 import { ComponentInteraction, Constants } from "@projectdysnomia/dysnomia";
 import { buildFriendsPage } from "../commands/roblox/friends.js";
